@@ -26,7 +26,9 @@ class MultimodalBartEncoder(BartPretrainedModel):
         embed_tokens (nn.Embedding): output embedding
     """
 
-    def __init__(self, config: BartConfig, util_config: dict, embed_tokens: Optional[nn.Embedding] = None):
+    def __init__(self, config: BartConfig, util_config: dict, 
+                 embed_tokens: Optional[nn.Embedding] = None, 
+                 embed_action_tokens: Optional[nn.Embedding] = None):
         super().__init__(config)
 
         self.dropout = config.dropout
@@ -42,18 +44,17 @@ class MultimodalBartEncoder(BartPretrainedModel):
         else:
             self.embed_tokens = nn.Embedding(config.vocab_size, embed_dim, self.padding_idx)
 
+        if embed_action_tokens is not None:
+            self.embed_action_tokens = embed_action_tokens
+        else:
+            self.embed_action_tokens = nn.Embedding(util_config["ACTION_COUNT"], util_config["ACTION_DIM"], util_config["ACTION_PADDING_IDX"])
+
         self.embed_positions = BartLearnedPositionalEmbedding(
             config.max_position_embeddings,
             embed_dim,
         )
         self.layers = nn.ModuleList([BartEncoderLayer(config) for _ in range(config.encoder_layers)])
         self.layernorm_embedding = nn.LayerNorm(embed_dim)
-
-        # ================================ Modifications ================================ #
-        # We convert the unique action indices to a learned representation which will be further 
-        # utilized alongwith visual and text modality features to retrieve final representation.
-        self.action_embeddings = nn.Embedding(util_config["ACTION_COUNT"], util_config["ACTION_DIM"])
-        # =============================================================================== #
 
         self.init_weights()
         self.gradient_checkpointing = False
@@ -161,7 +162,7 @@ class MultimodalBartEncoder(BartPretrainedModel):
             ), f"The head_mask should be specified for {len(self.layers)} layers, but it is for {head_mask.size()[0]}."
 
         # ================================ Modifications ================================ # 
-        action_input = self.action_embeddings(action_input.to(torch.int64))
+        action_input = self.embed_action_tokens(action_input.to(torch.int64))
         # =============================================================================== #
 
         for idx, encoder_layer in enumerate(self.layers):
