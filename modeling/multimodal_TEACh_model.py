@@ -45,12 +45,12 @@ class MultimodalTEAChModel(BartPretrainedModel):
         self,
         input_ids=None,
         attention_mask=None,
-        action_input=None,      # New addition of acoustic_input
+        action_input=None,      # New addition of action_input
         visual_input=None,      # New addition of visual_input
         # decoder_input_ids=None,
         # decoder_attention_mask=None,
-        decoder_action_input=None,      # New addition of acoustic_input
-        decoder_visual_input=None,      # New addition of acoustic_input
+        decoder_action_input=None,      # New addition of decoder_action_input
+        decoder_visual_input=None,      # New addition of decoder_visual_input
         head_mask=None,
         # decoder_head_mask=None,
         # cross_attn_head_mask=None,
@@ -93,7 +93,7 @@ class MultimodalTEAChModel(BartPretrainedModel):
 
         # ================================ Modifications ================================ #
         decoder_outputs = self.decoder(
-            decoder_action_input=decoder_action_input,
+            decoder_action_input=decoder_action_input, 
             decoder_visual_input=decoder_visual_input,
             encoder_hidden_states=encoder_outputs[0]
         )
