@@ -55,8 +55,9 @@ def get_gpu_memory_usage():
     
 def pad_seq(tensor: torch.tensor,
             dim: int,
-            max_len: int):
+            max_len: int,
+            pad_token_id: int=0):
     if max_len > tensor.shape[0]:
-        return torch.cat([tensor, torch.zeros(max_len - tensor.shape[0], dim)])
+        return torch.cat([tensor, torch.ones(max_len - tensor.shape[0], dim) * pad_token_id])
     else:
         return tensor[:max_len]
