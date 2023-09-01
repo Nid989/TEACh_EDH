@@ -22,32 +22,34 @@ class TEACh_EDH_Dataset:
         model_inputs['input_ids'] = torch.tensor([item for item in model_inputs['input_ids']], dtype=torch.long, device=self.device)
         model_inputs['attention_mask'] = torch.tensor([item for item in model_inputs['attention_mask']], dtype=torch.long, device=self.device)
         # pad action sequences i.e. source_actions & target_actions
-        # NOTE: avoiding the processing of obj_interaction_actions and objects 
+        # NOTE: avoiding the processing of obj_interaction_actions and objects
         # source_actions
-        model_inputs["action_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.long).unsqueeze(dim=1),
+        model_inputs["action_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.int64).unsqueeze(dim=1),
                                                             dim=1,
-                                                            max_len=self.config["SOURCE_ACTION_MAX_LEN"]) 
+                                                            max_len=self.config["SOURCE_ACTION_MAX_LEN"])
                                                     for item in self.dataset[self.config["SOURCE_ACTION_COLUMN"]].values.tolist()], 0).to(self.device)
-        # target_actions
-        model_inputs["action_output"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.long).unsqueeze(dim=1),
-                                                            dim=1,
-                                                            max_len=self.config["TARGET_ACTION_MAX_LEN"]) 
-                                                    for item in self.dataset[self.config["TARGET_ACTION_COLUMN"]].values.tolist()], 0).to(self.device)
+        # target_actions (`labels`)
+        model_inputs["labels"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.int64).unsqueeze(dim=1),
+                                                      dim=1,
+                                                      max_len=self.config["TARGET_ACTION_MAX_LEN"],
+                                                      pad_token_id=self.config["ACTION_PADDING_IDX"])
+                                              for item in self.dataset[self.config["TARGET_ACTION_COLUMN"]].values.tolist()], 0).to(self.device)
+
         # pad visual feats i.e. driver_images_history_feats & driver_images_future_feats
         # driver_images_history_feats
         model_inputs["visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
                                                             dim=self.config["VISUAL_DIM"],
-                                                            max_len=self.config["SOURCE_VISUAL_MAX_LEN"]) 
+                                                            max_len=self.config["SOURCE_VISUAL_MAX_LEN"])
                                                     for item in self.dataset[self.config["SOURCE_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
         # driver_images_future_feats
-        model_inputs["visual_output"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
+        model_inputs["decoder_visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
                                                             dim=self.config["VISUAL_DIM"],
-                                                            max_len=self.config["TARGET_VISUAL_MAX_LEN"]) 
+                                                            max_len=self.config["TARGET_VISUAL_MAX_LEN"])
                                                     for item in self.dataset[self.config["TARGET_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
-        
+
         del source_dialogs
         gc.collect()
-        return model_inputs    
+        return model_inputs
 
     def set_up_data_loader(self):
         dataset = self.preprocess_dataset()
@@ -55,10 +57,10 @@ class TEACh_EDH_Dataset:
         dataset = TensorDataset(
             dataset["input_ids"],
             dataset["attention_mask"],
-            dataset["action_input"],
-            dataset["action_output"],
+            dataset["action_input"].squeeze(-1),
             dataset["visual_input"],
-            dataset["visual_output"]
+            dataset["decoder_visual_input"],
+            dataset["labels"].squeeze(-1),
         )
         self.data_loader = DataLoader(
             dataset,
