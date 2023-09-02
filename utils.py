@@ -1,9 +1,11 @@
+import gc
 import json
 import pickle
 import yaml
 from PIL import Image
 import subprocess
 import torch
+from torch.optim import AdamW
 
 def load_from_yaml(path_to_file: str):
     print(f"loading data from .yaml file @ {path_to_file}")
@@ -61,3 +63,31 @@ def pad_seq(tensor: torch.tensor,
         return torch.cat([tensor, torch.ones(max_len - tensor.shape[0], dim) * pad_token_id])
     else:
         return tensor[:max_len]
+    
+def prepare_for_training(model,
+                         base_learning_rate: float,
+                         new_learning_rate: float,
+                         weight_decay: float):
+    base_params_list = []
+    new_params_list = []
+    for name, param in model.named_parameters():
+        if "action_transformer" or "visual_transformer" or "MAF_layer" or "fusion_layer" in name:
+            new_params_list.append(param)
+        else:
+            base_params_list.append(param)
+
+    optimizer = AdamW(
+        [
+            {'params': base_params_list,'lr': base_learning_rate, 'weight_decay': weight_decay},
+            {'params': new_params_list,'lr': new_learning_rate, 'weight_decay': weight_decay}
+        ],
+        lr=base_learning_rate,
+        weight_decay=weight_decay
+    )
+
+    del base_params_list
+    del new_params_list
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    return optimizer
