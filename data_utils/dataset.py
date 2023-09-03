@@ -34,6 +34,7 @@ class TEACh_EDH_Dataset:
                                                       max_len=self.config["TARGET_ACTION_MAX_LEN"],
                                                       pad_token_id=self.config["ACTION_PADDING_IDX"])
                                               for item in self.dataset[self.config["TARGET_ACTION_COLUMN"]].values.tolist()], 0).to(self.device)
+        print(model_inputs["labels"].shape)
 
         # pad visual feats i.e. driver_images_history_feats & driver_images_future_feats
         # driver_images_history_feats
@@ -47,9 +48,24 @@ class TEACh_EDH_Dataset:
                                                             max_len=self.config["TARGET_VISUAL_MAX_LEN"])
                                                     for item in self.dataset[self.config["TARGET_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
 
+        # ================================ Modifications ================================ #
+        # TODO: utilize the `target_obj_interaction_actions` and formulate `object_labels`
+        model_inputs["object_labels"] = torch.stack([pad_seq((self.formulate_object_labels(torch.tensor(item[0], dtype=torch.int64), torch.tensor(item[1], dtype=torch.int64))).unsqueeze(dim=1),
+                                                             dim=1,
+                                                             max_len=self.config["TARGET_ACTION_MAX_LEN"]) 
+                                                     for item in self.data[[self.config["TARGET_OBJ_INTERACTION_ACTION_COLUMN"], self.config["TARGET_OBJECT_COLUMN"]]].values.tolist()], 0)
+        # =============================================================================== #
+
         del source_dialogs
         gc.collect()
         return model_inputs
+
+    def formulate_object_labels(self,
+                                target_obj_interaction_actions: torch.Tensor, 
+                                target_objects: torch.Tensor):
+        object_labels = torch.zeros_like(target_obj_interaction_actions)
+        object_labels[target_obj_interaction_actions.nonzero(as_tuple=True)] = target_objects
+        return object_labels
 
     def set_up_data_loader(self):
         dataset = self.preprocess_dataset()
@@ -61,6 +77,7 @@ class TEACh_EDH_Dataset:
             dataset["visual_input"],
             dataset["decoder_visual_input"],
             dataset["labels"].squeeze(-1),
+            dataset["object_labels"].squeeze(-1),
         )
         self.data_loader = DataLoader(
             dataset,
