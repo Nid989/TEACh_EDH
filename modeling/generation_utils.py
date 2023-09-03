@@ -4,16 +4,14 @@ import torch.nn.functional as F
 from modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
 
 class Generation:
-    
+
     @torch.no_grad()
     def generate_no_beam_search(
         self,
         model,
         encodings,
         action_input,
-        visual_input,
-        decoder_visual_input,
-        labels, 
+        labels,
         cur_len,
         eos_token_id,
         max_decoding_length,
@@ -22,6 +20,8 @@ class Generation:
         temperature,
         top_k,
         top_p,
+        visual_input=None,
+        decoder_visual_input=None,
     ):
         """
         Inspired from the Huggingface implementation available here under the generation_utils.py file.
@@ -62,16 +62,15 @@ class Generation:
             labels = model_inputs["labels"]
             labels = torch.cat([labels, next_token.unsqueeze(dim=0)], dim=-1)
 
-            # ================================ TODO ================================ # 
+            # ================================ TODO ================================ #
             # Add code corresponding to object determination and simulator here.
-            break
             # ====================================================================== #
 
             cur_len = cur_len + 1
 
             # discontinue the loop, if reached eos_token_id
             if next_token == eos_token_id: break
-            
+
         return labels
 
     def top_k_top_p_filtering(
@@ -115,7 +114,7 @@ class Generation:
         self,
         encodings,
         action_input,
-        visual_input,
+        visual_input=None,
         decoder_visual_input=None,
         labels=None,
         device=None,
@@ -124,9 +123,10 @@ class Generation:
         assert isinstance(encodings["input_ids"], torch.Tensor), "`input_ids` should be of dtype torch.Tensor."
         assert isinstance(encodings["attention_mask"], torch.Tensor), "`attention_mask` should be of dtype torch.Tensor."
         assert isinstance(action_input, torch.Tensor), "`action_input` should be of dtype torch.Tensor."
-        assert isinstance(visual_input, torch.Tensor), "`visual_input` should be of dtype torch.Tensor."
-
-        assert action_input.shape[1] == visual_input.shape[1], "length of `action_input`, & `visual_input` should be strictly equal."
+        
+        if visual_input is not None:
+            assert isinstance(visual_input, torch.Tensor), "`visual_input` should be of dtype torch.Tensor."
+            assert action_input.shape[1] == visual_input.shape[1], "length of `action_input`, & `visual_input` should be strictly equal."
 
         if decoder_visual_input is not None:
             assert isinstance(decoder_visual_input, torch.Tensor), "`decoder_visual_input` should be of dtype torch.Tensor."
@@ -135,7 +135,7 @@ class Generation:
         if decoder_visual_input is not None and labels is not None:
             assert decoder_visual_input.shape[1] == labels.shape[1], "length of `decoder_visual_input`, & `labels` should be strictly equal."
 
-        if decoder_visual_input is None:
+        if visual_input is not None and decoder_visual_input is None:
             decoder_visual_input = visual_input[:, -1, :]
         if labels is None:
             assert eos_token_id is not None, "provide the `eos_token_id` value, for further processing"
@@ -149,8 +149,8 @@ class Generation:
             "input_ids": encodings["input_ids"].to(device),
             "attention_mask": encodings["attention_mask"].to(device),
             "action_input": action_input.to(device),
-            "visual_input": visual_input.to(device),
-            "decoder_visual_input": decoder_visual_input.to(device),
+            "visual_input": visual_input.to(device) if visual_input is not None else None,
+            "decoder_visual_input": decoder_visual_input.to(device) if decoder_visual_input is not None else None,
             "labels": labels.to(device),
         }
 
@@ -163,8 +163,8 @@ class Generation:
                 `input_ids`: torch.tensor
                 `attention_mask`: torch.tensor
                 `action_input`: torch.tensor
-                `visual_input`: torch.tensor
-                `decoder_visual_input`: torch.tensor
+                `visual_input`: torch.tensor # None if action_only
+                `decoder_visual_input`: torch.tensor # None if action_only 
                 `labels`: torch.tensor
         """
 
@@ -173,16 +173,24 @@ class Generation:
         for arg_name in required_args:
             assert arg_name in args, f"Missing required argument: {arg_name}"
 
-        args = dict((t, args[t].to(model.device)) for t in args)
+        # args = dict((t, args[t].to(model.device)) for t in args)
 
         model.eval()
         with torch.no_grad():
-            outputs = model(
-                input_ids=args["input_ids"],
-                attention_mask=args["attention_mask"],
-                action_input=args["action_input"],
-                visual_input=args["visual_input"],
-                decoder_visual_input=args["decoder_visual_input"],
-                labels=args["labels"],
-            )
+            if args["visual_input"] is None and args["decoder_visual_input"] is None:
+                outputs = model(
+                    input_ids=args["input_ids"],
+                    attention_mask=args["attention_mask"],
+                    action_input=args["action_input"],
+                    labels=args["labels"],
+                )
+            else:    
+                outputs = model(
+                    input_ids=args["input_ids"],
+                    attention_mask=args["attention_mask"],
+                    action_input=args["action_input"],
+                    visual_input=args["visual_input"],
+                    decoder_visual_input=args["decoder_visual_input"],
+                    labels=args["labels"],
+                )
         return outputs
