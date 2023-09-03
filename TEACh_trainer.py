@@ -5,7 +5,7 @@ import torch.nn as nn
 from transformers.models.bart.configuration_bart import BartConfig
 from transformers import BartTokenizerFast
 
-from modeling.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
+from modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
 from data_utils.dataset import TEACh_EDH_Dataset
 from utils import prepare_for_training
 

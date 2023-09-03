@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from modeling.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
+from modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
 
 class Generation:
     

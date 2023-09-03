@@ -8,7 +8,7 @@ from transformers.models.bart.modeling_bart import (
 )
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
-from modeling.multimodal_TEACh_model import MultimodalTEAChModel
+from modeling.multimodal.multimodal_TEACh_model import MultimodalTEAChModel
 
 class MultimodalTEAChModelForActionGeneration(BartPretrainedModel):
 

@@ -15,9 +15,9 @@ from transformers.models.bart.modeling_bart import (
 from transformers.modeling_outputs import BaseModelOutput
 from transformer_encoder import TransformerEncoder
 
-from modeling.modality_aware_fusion import MAF
+from modeling.unimodal.dual_modality_processor import DuoModalityProcessor
 
-class MultimodalBartEncoder(BartPretrainedModel):
+class BartActionEncoder(BartPretrainedModel):
     """
     Transformer encoder consisting of *config.encoder_layers* self attention layers. Each layer is a
     :class:`BartEncoderLayer`.
@@ -26,8 +26,8 @@ class MultimodalBartEncoder(BartPretrainedModel):
         embed_tokens (nn.Embedding): output embedding
     """
 
-    def __init__(self, config: BartConfig, util_config: dict, 
-                 embed_tokens: Optional[nn.Embedding] = None, 
+    def __init__(self, config: BartConfig, util_config: dict,
+                 embed_tokens: Optional[nn.Embedding] = None,
                  embed_action_tokens: Optional[nn.Embedding] = None):
         super().__init__(config)
 
@@ -61,20 +61,16 @@ class MultimodalBartEncoder(BartPretrainedModel):
 
         # ================================ Modifications ================================ #
         # We prompt the Encoder to fuse the acoustic and visual features @ layer-4 of the BartEncoder model
-        # Also, we initialize two separate TransformerEncoder to encode the visual and acoustic information
+        # Also, we initialize two separate TransformerEncoder to encode the action information
         # We also initialize the MAF for multimodal fusion.
         self.fusion_at_layer = [4]
-        self.visual_transformer = TransformerEncoder(d_model=util_config["VISUAL_DIM"],
-                                                     n_layers=4,
-                                                     n_heads=8,
-                                                     d_ff=util_config["VISUAL_DIM"])
         self.action_transformer = TransformerEncoder(d_model=util_config["ACTION_DIM"],
                                                      n_layers=4,
                                                      n_heads=2,
                                                      d_ff=util_config["ACTION_DIM"])
-        self.MAF_layer = MAF(util_config=util_config,
-                             dim_model=embed_dim,
-                             dropout_rate=0.2)
+        self.DMP_layer = DuoModalityProcessor(util_config=util_config,
+                                              dim_model=embed_dim,
+                                              dropout_rate=0.2)
         # =============================================================================== #
 
     def forward(
@@ -82,7 +78,6 @@ class MultimodalBartEncoder(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         action_input=None,      # New addition of action_input
-        visual_input=None,      # New addition of visual_input
         head_mask=None,
         inputs_embeds=None,
         output_attentions=None,
@@ -161,7 +156,7 @@ class MultimodalBartEncoder(BartPretrainedModel):
                 len(self.layers)
             ), f"The head_mask should be specified for {len(self.layers)} layers, but it is for {head_mask.size()[0]}."
 
-        # ================================ Modifications ================================ # 
+        # ================================ Modifications ================================ #
         action_input = self.embed_action_tokens(action_input.to(torch.int64))
         # =============================================================================== #
 
@@ -178,13 +173,8 @@ class MultimodalBartEncoder(BartPretrainedModel):
                 # acoustic_input = self.acoustic_transformer(acoustic_input, mask=None)[-1]
                 # acoustic_input = self.acoustic_transformer(acoustic_input, acoustic_input.ne(0))[-1]
 
-                visual_input = self.visual_transformer(visual_input, mask=None)
-                # visual_input = self.visual_transformer(visual_input, mask=None)[-1]
-                # visual_input = self.visual_transformer(visual_input, visual_input.ne(0))[-1]
-
-                hidden_states = self.MAF_layer(text_input=hidden_states,
-                                               action_context=action_input,
-                                               visual_context=visual_input)
+                hidden_states = self.DMP_layer(text_input=hidden_states,
+                                               action_context=action_input)
 
             # =============================================================================== #
 
