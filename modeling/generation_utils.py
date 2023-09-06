@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
+from modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
 
 class Generation:
 
@@ -13,6 +14,7 @@ class Generation:
         action_input,
         labels,
         cur_len,
+        sos_token_id,
         eos_token_id,
         max_decoding_length,
         min_decoding_length,
@@ -35,7 +37,7 @@ class Generation:
                                                               decoder_visual_input=decoder_visual_input,
                                                               labels=labels,
                                                               device="cuda",
-                                                              eos_token_id=eos_token_id)
+                                                              sos_token_id=sos_token_id)
 
             outputs = self.generate_output(model, **model_inputs)
             next_token_logits = outputs[1][:, -1, :]
@@ -59,7 +61,7 @@ class Generation:
                 next_token = torch.argmax(next_token_logits, dim=-1)
 
             # add token and increase length by one
-            labels = model_inputs["labels"]
+            labels = model_inputs["labels"].clone().detach()
             labels = torch.cat([labels, next_token.unsqueeze(dim=0)], dim=-1)
 
             # ================================ TODO ================================ #
@@ -118,12 +120,12 @@ class Generation:
         decoder_visual_input=None,
         labels=None,
         device=None,
-        eos_token_id=None,
+        sos_token_id=None,
     ):
         assert isinstance(encodings["input_ids"], torch.Tensor), "`input_ids` should be of dtype torch.Tensor."
         assert isinstance(encodings["attention_mask"], torch.Tensor), "`attention_mask` should be of dtype torch.Tensor."
         assert isinstance(action_input, torch.Tensor), "`action_input` should be of dtype torch.Tensor."
-        
+
         if visual_input is not None:
             assert isinstance(visual_input, torch.Tensor), "`visual_input` should be of dtype torch.Tensor."
             assert action_input.shape[1] == visual_input.shape[1], "length of `action_input`, & `visual_input` should be strictly equal."
@@ -138,8 +140,8 @@ class Generation:
         if visual_input is not None and decoder_visual_input is None:
             decoder_visual_input = visual_input[:, -1, :]
         if labels is None:
-            assert eos_token_id is not None, "provide the `eos_token_id` value, for further processing"
-            labels = torch.tensor([eos_token_id], dtype=torch.long)
+            assert sos_token_id is not None, "provide the `sos_token_id` value, for further processing"
+            labels = torch.tensor([sos_token_id], dtype=torch.long).unsqueeze(dim=0)
 
         if device is None:
             device = "cpu"
@@ -151,7 +153,7 @@ class Generation:
             "action_input": action_input.to(device),
             "visual_input": visual_input.to(device) if visual_input is not None else None,
             "decoder_visual_input": decoder_visual_input.to(device) if decoder_visual_input is not None else None,
-            "labels": labels.to(device),
+            "labels": labels.to(device).clone().detach(),
         }
 
     def generate_output(self, model, **args):
@@ -164,7 +166,7 @@ class Generation:
                 `attention_mask`: torch.tensor
                 `action_input`: torch.tensor
                 `visual_input`: torch.tensor # None if action_only
-                `decoder_visual_input`: torch.tensor # None if action_only 
+                `decoder_visual_input`: torch.tensor # None if action_only
                 `labels`: torch.tensor
         """
 
@@ -184,7 +186,7 @@ class Generation:
                     action_input=args["action_input"],
                     labels=args["labels"],
                 )
-            else:    
+            else:
                 outputs = model(
                     input_ids=args["input_ids"],
                     attention_mask=args["attention_mask"],
