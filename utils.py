@@ -1,3 +1,4 @@
+import os
 import gc
 import json
 import pickle
@@ -91,3 +92,12 @@ def prepare_for_training(model,
     torch.cuda.empty_cache()
 
     return optimizer
+
+def check_and_create_directory(path_to_folder):
+    """
+    check if a nested path exists and create
+    missing nodes/directories along the route
+    """
+    if not os.path.exists(path_to_folder):
+        os.makedirs(path_to_folder)
+    return path_to_folder
