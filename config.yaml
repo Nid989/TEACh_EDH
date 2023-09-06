@@ -1,4 +1,5 @@
-PATH_TO_DATA: "/content/sample_data.pkl"
+PATH_TO_TRAIN_DATA: "/content/sample_data.pkl"
+PATH_TO_VALIDATION_DATA: "/content/sample_data.pkl"
 
 MODEL_CHECKPOINT: "facebook/bart-large"
 
@@ -34,3 +35,6 @@ WEIGHT_DECAY: 1e-4
 
 NUM_DECODER_LAYERS: 6
 DROPOUT: 0.2
+
+RESULT_OUTPUT_DIR: "/content/results"
+MODEL_SETTING: "unimodal" # `unimodal` or `multimodal`
