@@ -215,39 +215,6 @@ class TEAChTrainer:
         torch.cuda.empty_cache()
 
         return epoch_val_loss / step
-    
-    def get_scores(pred_action_seq: torch.Tensor,
-                   gt_action_seq: torch.Tensor):
-
-      '''
-      Takes in the ground truth actions and predicted actions list
-      returns a tensor of 4 metrics for a single EDH instance
-      '''
-      # Convert tensors to lists
-      pred_action_seq = pred_action_seq.tolist()
-      gt_action_seq = gt_action_seq.tolist()
-
-      # Success = 1 if all the ground truth actions are present in the predictions
-      if (pred_action_seq == gt_action_seq):
-        success = 1
-      else:
-        success = 0
-
-      gt_path_len = len(gt_action_seq)
-      traj_len = len(pred_action_seq)
-      max_val = max(gt_path_len, traj_len)
-
-      #Expected state changes in E_hat
-      exp = len([x for x in pred_action_seq if x in gt_action_seq])
-      gc_success_rate = exp/gt_path_len
-
-
-      # Trajectory length weighted metrics
-      tlw_success = success*gt_path_len/max_val
-      tlw_gc_success_rate = gc_success_rate*gt_path_len/max_val
-
-
-      return torch.Tensor([success, tlw_success, gc_success_rate, tlw_gc_success_rate])
 
     def test_epoch(self,
                    model,
