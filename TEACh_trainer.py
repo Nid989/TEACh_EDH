@@ -17,10 +17,10 @@ from utils import prepare_for_training, pad_seq, check_and_create_directory
 
 def get_scores(pred_action_seq: list,
                gt_action_seq: list) -> Optional[dict]:
-               
+
     """
     Calculate `Success Rate`, `Trajectory Length Weighted {Succcess Rate, Goal Condictiona}`
-    """           
+    """
     # Success = 1 if all the ground truth actions are present in the predictions
     if (pred_action_seq == gt_action_seq):
         success = 1
@@ -69,7 +69,7 @@ class TEAChTrainer:
                                               base_learning_rate=float(config["BASE_LEARNING_RATE"]),
                                               new_learning_rate=float(config["NEW_LEARNING_RATE"]),
                                               weight_decay=float(config["WEIGHT_DECAY"]))
-        
+
         self.tokenizer = BartTokenizerFast.from_pretrained(config["MODEL_CHECKPOINT"])
 
         self.dataset = TEACh_EDH_Dataset(config, self.tokenizer)
@@ -109,7 +109,7 @@ class TEAChTrainer:
                 val_results["success_rate"], val_results["tlw_success_rate"], val_results["gc_success_rate"], val_results["tlw_gc_success_rate"]
             ))
 
-            
+
     def train_epoch(self,
                     model,
                     data_loader,
@@ -120,9 +120,9 @@ class TEAChTrainer:
         for step, batch in enumerate(tqdm(data_loader, desc="Training Iteration")):
             batch = tuple(t.to(self.device) for t in batch)
 
-            if self.model_setting == "unimodal":    
-                
-                input_ids, attention_mask, action_input, _, _, labels = batch
+            if self.model_setting == "unimodal":
+
+                input_ids, attention_mask, action_input, labels = batch
                 optimizer.zero_grad()
                 outputs = model(
                     input_ids=input_ids,
@@ -132,7 +132,7 @@ class TEAChTrainer:
                 )
 
             elif self.model_setting == "multimodal":
-                
+
                 input_ids, attention_mask, action_input, visual_input, decoder_visual_input, labels = batch
                 optimizer.zero_grad()
                 outputs = model(
@@ -178,14 +178,14 @@ class TEAChTrainer:
 
                 if self.model_setting == "unimodal":
 
-                    input_ids, attention_mask, action_input, _, _, labels = batch
+                    input_ids, attention_mask, action_input, labels = batch
                     outputs = model(
                         input_ids=input_ids,
                         attention_mask=attention_mask,
                         action_input=action_input,
                         labels=labels,
                     )
-                
+
                 elif self.model_setting == "multimodal":
 
                     input_ids, attention_mask, action_input, visual_input, decoder_visual_input, labels = batch
@@ -222,7 +222,7 @@ class TEAChTrainer:
                    data: pd.DataFrame,
                    desc,
                    **gen_kwargs):
-        
+
         model.eval()
         predictions = []
         gold = []
@@ -258,7 +258,7 @@ class TEAChTrainer:
                     visual_input=visual_input,
                     decoder_visual_input=decoder_visual_input
                 )
-                predictions.append(pred_trajectory.detach().tolist()) 
+                predictions.append(pred_trajectory.detach().tolist())
                 gold.append(row[self.config["TARGET_ACTION_COLUMN"]])
 
         del index
@@ -279,20 +279,20 @@ class TEAChTrainer:
                        tokenizer: BartTokenizerFast,
                        data: pd.DataFrame,
                        desc,
-                       epoch, 
+                       epoch,
                        **gen_kwargs):
-        
+
         predictions, gold = self.test_epoch(model,
                                             tokenizer,
                                             data,
                                             desc=desc,
                                             **gen_kwargs)
-        
+
         # `scores`; list(dict), `results`; dict(list) -> pd.DataFrame
-        scores = [get_scores(prediction, gold) for prediction, gt in zip(predictions, gold)]
-        results = defaultdict(list) 
+        scores = [get_scores(prediction[0], gt) for prediction, gt in zip(predictions, gold)]
+        results = defaultdict(list)
         _ = [results[key].append(value) for scores_dict in scores for key, value in scores_dict.items()]
-        results = pd.DataFrame(results) 
+        results = pd.DataFrame(results)
         aggregated_results = results.apply(lambda col: np.mean(col), axis=0).to_dict() # column-wise `mean/avg`
 
         if "Validation" in desc:
