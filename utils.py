@@ -75,7 +75,7 @@ def prepare_for_training(model,
     base_params_list = []
     new_params_list = []
     for name, param in model.named_parameters():
-        if "action_transformer" or "visual_transformer" or "MAF_layer" or "fusion_layer" in name:
+        if "action_transformer" or "visual_transformer" or "MAF_layer" or "DMP_layer" or "fusion_layer" in name:
             new_params_list.append(param)
         else:
             base_params_list.append(param)

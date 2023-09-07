@@ -138,7 +138,7 @@ class Generation:
             assert decoder_visual_input.shape[1] == labels.shape[1], "length of `decoder_visual_input`, & `labels` should be strictly equal."
 
         if visual_input is not None and decoder_visual_input is None:
-            decoder_visual_input = visual_input[:, -1, :]
+            decoder_visual_input = visual_input[:, -1, :].unsqueeze(dim=1)
         if labels is None:
             assert sos_token_id is not None, "provide the `sos_token_id` value, for further processing"
             labels = torch.tensor([sos_token_id], dtype=torch.long).unsqueeze(dim=0)
