@@ -6,6 +6,8 @@ from utils import load_from_pickle, pad_seq
 
 data_types_ = Literal["train", "validation"]
 
+data_types_ = Literal["train", "validation"]
+
 class TEACh_EDH_Dataset:
     def __init__(self, config, tokenizer):
         super(TEACh_EDH_Dataset, self).__init__()
@@ -13,6 +15,7 @@ class TEACh_EDH_Dataset:
         self.config = config
         self.tokenizer = tokenizer
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_setting = config["MODEL_SETTING"] # `unimodal (lang & actions only)` or `multimodal`
         self.train_dataset = load_from_pickle(self.config["PATH_TO_TRAIN_DATA"])
         self.validation_dataset = load_from_pickle(self.config["PATH_TO_VALIDATION_DATA"])
         self.train_data_loader = self.set_up_data_loader(data_type="train") # convert to tensors & batch dataset items
@@ -40,17 +43,18 @@ class TEACh_EDH_Dataset:
                                                       pad_token_id=self.config["ACTION_PADDING_IDX"])
                                               for item in dataset[self.config["TARGET_ACTION_COLUMN"]].values.tolist()], 0).to(self.device)
 
-        # pad visual feats i.e. driver_images_history_feats & driver_images_future_feats
-        # driver_images_history_feats
-        model_inputs["visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
-                                                            dim=self.config["VISUAL_DIM"],
-                                                            max_len=self.config["SOURCE_VISUAL_MAX_LEN"])
-                                                    for item in dataset[self.config["SOURCE_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
-        # driver_images_future_feats
-        model_inputs["decoder_visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
-                                                            dim=self.config["VISUAL_DIM"],
-                                                            max_len=self.config["TARGET_VISUAL_MAX_LEN"])
-                                                    for item in dataset[self.config["TARGET_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
+        if self.model_setting == "multimodal":
+            # pad visual feats i.e. driver_images_history_feats & driver_images_future_feats
+            # driver_images_history_feats
+            model_inputs["visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
+                                                                dim=self.config["VISUAL_DIM"],
+                                                                max_len=self.config["SOURCE_VISUAL_MAX_LEN"])
+                                                        for item in dataset[self.config["SOURCE_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
+            # driver_images_future_feats
+            model_inputs["decoder_visual_input"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.float),
+                                                                dim=self.config["VISUAL_DIM"],
+                                                                max_len=self.config["TARGET_VISUAL_MAX_LEN"])
+                                                        for item in dataset[self.config["TARGET_VISUAL_COLUMN"]].values.tolist()], 0).to(self.device)
 
         # ================================ Modifications ================================ #
         # TODO: utilize the `target_obj_interaction_actions` and formulate `object_labels`
@@ -78,24 +82,37 @@ class TEACh_EDH_Dataset:
         elif data_type == "validation":
             dataset = self.preprocess_dataset(self.validation_dataset)
         else:
-            raise ValueError(f"provide an appropriate data-split to extract features; found {data_type}, instead of `train` or `validation`")
-       
+            raise ValueError(f"provide an appropriate data-split to exctract features; found {data_type}, instead of `train` or `validation`")
+
         print(dataset.keys())
-       
-        dataset = TensorDataset(
-            dataset["input_ids"],
-            dataset["attention_mask"],
-            dataset["action_input"].squeeze(-1),
-            dataset["visual_input"],
-            dataset["decoder_visual_input"],
-            dataset["labels"].squeeze(-1),
-            # dataset["object_labels"].squeeze(-1),
-        )
+
+        if self.model_setting == "unimodal":
+            dataset = TensorDataset(
+                dataset["input_ids"],
+                dataset["attention_mask"],
+                dataset["action_input"].squeeze(-1),
+                dataset["labels"].squeeze(-1),
+                # dataset["object_labels"].squeeze(-1),
+            )
+        elif self.model_setting == "multimodal":
+            dataset = TensorDataset(
+                dataset["input_ids"],
+                dataset["attention_mask"],
+                dataset["action_input"].squeeze(-1),
+                dataset["visual_input"],
+                dataset["decoder_visual_input"],
+                dataset["labels"].squeeze(-1),
+                # dataset["object_labels"].squeeze(-1),
+            )
+        else: 
+            raise ValueError(f"provide an appropriate `model-setting` for further processing; found {self.config['MODEL_SETTING']}, instead of `unimodal` or `multimodal`")
+        
         data_loader = DataLoader(
             dataset,
             batch_size=self.config["BATCH_SIZE"],
             shuffle=True
         )
+        
         del dataset
         gc.collect()
         return data_loader

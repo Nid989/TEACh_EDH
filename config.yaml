@@ -11,7 +11,7 @@ ACTION_DIM: 1024
 # TODO: to be updated, since the vocabulary for action indices is not properly formulated
 ACTION_PADDING_IDX: 0 
 ACTION_START_IDX: 0
-SOURCE_ACTION_MAX_LEN: 150 
+SOURCE_ACTION_MAX_LEN: 300 
 # modication from ideal (i.e. TARGET_ACTION_MAX_LEN = 50), due to decoder related isses
 TARGET_ACTION_MAX_LEN: 512 
 SOURCE_ACTION_COLUMN: "source_actions"
@@ -38,3 +38,6 @@ DROPOUT: 0.2
 
 RESULT_OUTPUT_DIR: "/content/results"
 MODEL_SETTING: "unimodal" # `unimodal` or `multimodal`
+
+# need to consider this in generation_utils.py
+MAX_PRED_LEN: 80 
