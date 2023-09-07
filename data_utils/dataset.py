@@ -6,8 +6,6 @@ from utils import load_from_pickle, pad_seq
 
 data_types_ = Literal["train", "validation"]
 
-data_types_ = Literal["train", "validation"]
-
 class TEACh_EDH_Dataset:
     def __init__(self, config, tokenizer):
         super(TEACh_EDH_Dataset, self).__init__()
@@ -104,15 +102,15 @@ class TEACh_EDH_Dataset:
                 dataset["labels"].squeeze(-1),
                 # dataset["object_labels"].squeeze(-1),
             )
-        else: 
+        else:
             raise ValueError(f"provide an appropriate `model-setting` for further processing; found {self.config['MODEL_SETTING']}, instead of `unimodal` or `multimodal`")
-        
+
         data_loader = DataLoader(
             dataset,
             batch_size=self.config["BATCH_SIZE"],
             shuffle=True
         )
-        
+
         del dataset
         gc.collect()
         return data_loader
