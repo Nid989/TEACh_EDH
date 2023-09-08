@@ -228,7 +228,11 @@ class TEAChTrainer:
         gold = []
         with torch.no_grad():
             for index, row in tqdm(data.iterrows(), desc=desc, total=data.shape[0]):
-                encodings = tokenizer(row[self.config["SOURCE_DIALOG_COLUMN"]], max_length=self.config["SOURCE_DIALOG_MAX_LEN"], padding="max_length", return_tensors="pt")
+                encodings = tokenizer(row[self.config["SOURCE_DIALOG_COLUMN"]], 
+                                      max_length=self.config["SOURCE_DIALOG_MAX_LEN"], 
+                                      padding="max_length", 
+                                      truncation=True,
+                                      return_tensors="pt")
                 action_input = pad_seq(torch.tensor(row[self.config["SOURCE_ACTION_COLUMN"]], dtype=torch.int64).unsqueeze(dim=-1),
                                        dim=1,
                                        max_len=self.config["SOURCE_ACTION_MAX_LEN"]).squeeze(dim=-1).unsqueeze(dim=0)
