@@ -1,3 +1,4 @@
+import os
 import gc
 from tqdm import tqdm
 from typing import Optional
@@ -302,7 +303,7 @@ class TEAChTrainer:
         if "Validation" in desc:
             val_df = pd.DataFrame(list(zip(gold, predictions)), columns=['target_actions', 'predicted_actions'])
             RESULT_OUTPUT_DIR = self.config["RESULT_OUTPUT_DIR"]
-            file_name = check_and_create_directory(RESULT_OUTPUT_DIR + "./val/") + "./TEACh_epoch_" + str(epoch+1) + "_val_results.csv"
+            file_name = check_and_create_directory(os.path.join(RESULT_OUTPUT_DIR + "./val/")) + "./TEACh_epoch_" + str(epoch+1) + "_val_results.csv"
             val_df.to_csv(file_name, index=False)
             print("Validation File saved")
 
