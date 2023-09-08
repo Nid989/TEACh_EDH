@@ -99,6 +99,7 @@ if __name__ == "__main__":
 
     # Possible `dataset_type`: `train`, `valid_seen`, or `valid_unseen`
 
+    # train
     teach_image_db_train = TEACh_Image_Database(config = {
         "dataset_type": "train",
         "path_to_edh_instances_dir": "./edh_instances/",
@@ -110,6 +111,7 @@ if __name__ == "__main__":
     df_train = teach_image_db_train.prepare_image_database()
     df_train.to_pickle("./TEACh_image_database_train.pkl")
 
+    # valid_seen
     teach_image_db_valid_seen = TEACh_Image_Database(config = {
         "dataset_type": "valid_seen",
         "path_to_edh_instances_dir": "./edh_instances/",

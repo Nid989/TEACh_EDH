@@ -11,7 +11,7 @@ from transformers import BartTokenizerFast
 
 from modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
 from modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
-from data_utils.dataset import TEACh_EDH_Dataset
+from data_utils.teach_edh_dataset import TEACh_EDH_Dataset
 from modeling.generation_utils import Generation
 from utils import prepare_for_training, pad_seq, check_and_create_directory
 
