@@ -12,7 +12,7 @@ class Generation:
         model,
         encodings,
         action_input,
-        labels,
+        decoder_action_input,
         cur_len,
         sos_token_id,
         eos_token_id,
@@ -35,12 +35,12 @@ class Generation:
                                                               action_input=action_input,
                                                               visual_input=visual_input,
                                                               decoder_visual_input=decoder_visual_input,
-                                                              labels=labels,
+                                                              decoder_action_input=decoder_action_input,
                                                               device="cuda",
                                                               sos_token_id=sos_token_id)
-
+            
             outputs = self.generate_output(model, **model_inputs)
-            next_token_logits = outputs[1][:, -1, :]
+            next_token_logits = outputs.logits[:, -1, :]
 
             # post-processing generated logits for the final token
             if eos_token_id is not None and cur_len < min_decoding_length:
@@ -61,8 +61,8 @@ class Generation:
                 next_token = torch.argmax(next_token_logits, dim=-1)
 
             # add token and increase length by one
-            labels = model_inputs["labels"].clone().detach()
-            labels = torch.cat([labels, next_token.unsqueeze(dim=0)], dim=-1)
+            decoder_action_input = model_inputs["decoder_action_input"].clone().detach()
+            decoder_action_input = torch.cat([decoder_action_input, next_token.unsqueeze(dim=0)], dim=-1)
 
             # ================================ TODO ================================ #
             # Add code corresponding to object determination and simulator here.
@@ -73,7 +73,7 @@ class Generation:
             # discontinue the loop, if reached eos_token_id
             if next_token == eos_token_id: break
 
-        return labels
+        return decoder_action_input
 
     def top_k_top_p_filtering(
         self,
@@ -118,7 +118,7 @@ class Generation:
         action_input,
         visual_input=None,
         decoder_visual_input=None,
-        labels=None,
+        decoder_action_input=None,
         device=None,
         sos_token_id=None,
     ):
@@ -132,16 +132,16 @@ class Generation:
 
         if decoder_visual_input is not None:
             assert isinstance(decoder_visual_input, torch.Tensor), "`decoder_visual_input` should be of dtype torch.Tensor."
-        if labels is not None:
-            assert isinstance(labels, torch.Tensor), "`labels` should be of dtype torch.Tensor."
-        if decoder_visual_input is not None and labels is not None:
-            assert decoder_visual_input.shape[1] == labels.shape[1], "length of `decoder_visual_input`, & `labels` should be strictly equal."
+        if decoder_action_input is not None:
+            assert isinstance(decoder_action_input, torch.Tensor), "`decoder_action_input` should be of dtype torch.Tensor."
+        if decoder_visual_input is not None and decoder_action_input is not None:
+            assert decoder_visual_input.shape[1] == decoder_action_input.shape[1], "length of `decoder_visual_input`, & `decoder_action_input` should be strictly equal."
 
         if visual_input is not None and decoder_visual_input is None:
-            decoder_visual_input = visual_input[:, -1, :].unsqueeze(dim=1)
-        if labels is None:
+            decoder_visual_input = visual_input[:, -1, :]
+        if decoder_action_input is None:
             assert sos_token_id is not None, "provide the `sos_token_id` value, for further processing"
-            labels = torch.tensor([sos_token_id], dtype=torch.long).unsqueeze(dim=0)
+            decoder_action_input = torch.tensor([sos_token_id], dtype=torch.long).unsqueeze(dim=0)
 
         if device is None:
             device = "cpu"
@@ -153,7 +153,7 @@ class Generation:
             "action_input": action_input.to(device),
             "visual_input": visual_input.to(device) if visual_input is not None else None,
             "decoder_visual_input": decoder_visual_input.to(device) if decoder_visual_input is not None else None,
-            "labels": labels.to(device).clone().detach(),
+            "decoder_action_input": decoder_action_input.to(device).clone().detach(),
         }
 
     def generate_output(self, model, **args):
@@ -167,10 +167,10 @@ class Generation:
                 `action_input`: torch.tensor
                 `visual_input`: torch.tensor # None if action_only
                 `decoder_visual_input`: torch.tensor # None if action_only
-                `labels`: torch.tensor
+                `decoder_action_input`: torch.tensor
         """
 
-        required_args = ['input_ids', 'attention_mask', 'action_input', 'visual_input', 'decoder_visual_input', 'labels']
+        required_args = ['input_ids', 'attention_mask', 'action_input', 'visual_input', 'decoder_visual_input', 'decoder_action_input']
 
         for arg_name in required_args:
             assert arg_name in args, f"Missing required argument: {arg_name}"
@@ -184,7 +184,7 @@ class Generation:
                     input_ids=args["input_ids"],
                     attention_mask=args["attention_mask"],
                     action_input=args["action_input"],
-                    labels=args["labels"],
+                    decoder_action_input=args["decoder_action_input"],
                 )
             else:
                 outputs = model(
@@ -193,6 +193,6 @@ class Generation:
                     action_input=args["action_input"],
                     visual_input=args["visual_input"],
                     decoder_visual_input=args["decoder_visual_input"],
-                    labels=args["labels"],
+                    decoder_action_input=args["decoder_action_input"],
                 )
         return outputs
