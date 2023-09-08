@@ -1,12 +1,12 @@
-PATH_TO_TRAIN_DATA: "/content/sample_data.pkl"
-PATH_TO_VALIDATION_DATA: "/content/sample_data.pkl"
+PATH_TO_TRAIN_DATA: "./data/TEACh_dataset_w_actions_train.pkl"
+PATH_TO_VALIDATION_DATA: "./data/TEACh_dataset_w_actions_valid_seen.pkl"
 
 MODEL_CHECKPOINT: "facebook/bart-large"
 
 SOURCE_DIALOG_MAX_LEN: 512
 SOURCE_DIALOG_COLUMN: "dialog_history_proc"
 
-ACTION_COUNT: 19
+ACTION_COUNT: 22 # modification 
 ACTION_DIM: 1024
 # TODO: to be updated, since the vocabulary for action indices is not properly formulated
 ACTION_PADDING_IDX: 0 
@@ -26,7 +26,7 @@ TARGET_VISUAL_COLUMN: "driver_images_future_feats"
 TARGET_OBJ_INTERACTION_ACTION_COLUMN: "target_obj_interaction_actions"
 TARGET_OBJECT_COLUMN: "target_objects"
 
-BATCH_SIZE: 4
+BATCH_SIZE: 2
 MAX_EPOCHS: 50
 
 BASE_LEARNING_RATE: 5e-6
@@ -36,7 +36,7 @@ WEIGHT_DECAY: 1e-4
 NUM_DECODER_LAYERS: 6
 DROPOUT: 0.2
 
-RESULT_OUTPUT_DIR: "/content/results"
+RESULT_OUTPUT_DIR: "./results"
 MODEL_SETTING: "unimodal" # `unimodal` or `multimodal`
 
 # need to consider this in generation_utils.py
