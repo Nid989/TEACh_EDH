@@ -60,10 +60,14 @@ class TEAChModelForActionGeneration(BartPretrainedModel):
                     self.util_config["ACTION_START_IDX"]
                 )
 
-        # replace indices with pad_tokens in `labels` and set to -100
-        # since masked (-100) tokens are ignored while computing loss
-        labels[labels == self.util_config["ACTION_PADDING_IDX"]] = -100
-        labels.to(torch.long)
+        if labels is not None:
+            # replace indices with pad_tokens in `labels` and set to -100
+            # since masked (-100) tokens are ignored while computing loss
+            mask = (labels.clone() == self.config["ACTION_PADDING_IDX"])
+            labels[mask] = -100
+            # object_labels[mask] = -100
+            labels.to(torch.long)
+            # object_labels.to(torch.long)
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 

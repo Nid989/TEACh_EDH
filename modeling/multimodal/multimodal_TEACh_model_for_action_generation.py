@@ -14,7 +14,7 @@ class MultimodalTEAChModelForActionGeneration(BartPretrainedModel):
 
     def __init__(self, config: BartConfig, util_config: dict):
         super().__init__(config)
-        
+
         self.config = config
         self.util_config = util_config
         self.model = MultimodalTEAChModel(config=config, util_config=util_config)
@@ -31,7 +31,7 @@ class MultimodalTEAChModelForActionGeneration(BartPretrainedModel):
         visual_input=None,      # New addition of visual_input
         # decoder_input_ids=None,
         # decoder_attention_mask=None,
-        decoder_action_input=None,      # New addition of decoder_action_input 
+        decoder_action_input=None,      # New addition of decoder_action_input
         decoder_visual_input=None,      # New addition of decoder_visual_input
         head_mask=None,
         # decoder_head_mask=None,
@@ -53,20 +53,21 @@ class MultimodalTEAChModelForActionGeneration(BartPretrainedModel):
             (masked), the loss is only computed for the tokens with labels in ``[0, ..., config.vocab_size]``.
         Returns:
         """
-        
+
         if labels is not None:
             if decoder_action_input is None:
                 decoder_action_input = shift_tokens_right(
-                    labels, 
-                    self.util_config["ACTION_PADDING_IDX"], 
+                    labels,
+                    self.util_config["ACTION_PADDING_IDX"],
                     self.util_config["ACTION_START_IDX"]
                 )
-                
-        # replace indices with pad_tokens in `labels` and set to -100
-        # since masked (-100) tokens are ignored while computing loss 
-        labels[labels == self.util_config["ACTION_PADDING_IDX"]] = -100 
-        labels.to(torch.long)
-            
+
+        if labels is not None:
+            # replace indices with pad_tokens in `labels` and set to -100
+            # since masked (-100) tokens are ignored while computing loss
+            labels[labels == self.util_config["ACTION_PADDING_IDX"]] = -100
+            labels.to(torch.long)
+
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.model(
