@@ -5,6 +5,8 @@ import pickle
 import yaml
 from PIL import Image
 import subprocess
+import pandas as pd
+from typing import Optional
 import torch
 from torch.optim import AdamW
 
@@ -104,3 +106,12 @@ def check_and_create_directory(path_to_folder):
     if not os.path.exists(path_to_folder):
         os.makedirs(path_to_folder)
     return path_to_folder
+
+def load_img_db(path_to_file: str) -> Optional[pd.DataFrame]:
+    img_db = load_from_pickle(path_to_file)
+    # re-format the keys
+    img_db["path_to_image_file"] = img_db.apply(
+        lambda row: "/".join(row["path_to_image_file"].split("/")[-2:]), 
+        axis=1
+    )
+    return img_db
