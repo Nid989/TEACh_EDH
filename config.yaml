@@ -1,5 +1,5 @@
-PATH_TO_TRAIN_DATA: "./sample_data.pkl"
-PATH_TO_VALIDATION_DATA: "./sample_data.pkl"
+PATH_TO_TRAIN_DATA: "./data/sample_data.pkl"
+PATH_TO_VALIDATION_DATA: "./data/sample_data.pkl"
 
 MODEL_CHECKPOINT: "facebook/bart-large"
 
