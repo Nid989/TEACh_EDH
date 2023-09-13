@@ -29,7 +29,7 @@ class Generation:
         Inspired from the Huggingface implementation available here under the generation_utils.py file.
         """
         while cur_len < max_decoding_length:
-
+            
             # prepare inputs & shift them to `device`
             model_inputs = self.prepare_inputs_for_generation(encodings=encodings,
                                                               action_input=action_input,

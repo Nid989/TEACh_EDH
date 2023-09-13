@@ -55,6 +55,8 @@ class TEAChTrainer:
 
         self.bart_config = BartConfig.from_pretrained(config["MODEL_CHECKPOINT"])
 
+        # print(self.bart_config)
+        
         if config["MODEL_SETTING"] == "unimodal":
             self.model_setting = "unimodal"
             self.model = TEAChModelForActionGeneration(self.bart_config, config)
@@ -250,7 +252,7 @@ class TEAChTrainer:
                     model=model,
                     encodings=encodings,
                     action_input=action_input,
-                    labels=None, # labels are automatically initialized `[<sos>]`
+                    decoder_action_input=None, # decoder_action_input are automatically initialized `[<sos>]`
                     cur_len=1,
                     sos_token_id=1,
                     eos_token_id=2,
