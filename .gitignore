@@ -4,3 +4,6 @@ data_utils/__pycache__
 modeling/__pycache__
 modeling/unimodal/__pycache__
 modeling/multimodal/__pycache__
+results/
+results./
+.ipynb_checkpoints/

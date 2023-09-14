@@ -55,6 +55,8 @@ class TEAChTrainer:
 
         self.bart_config = BartConfig.from_pretrained(config["MODEL_CHECKPOINT"])
 
+        # print(self.bart_config)
+        
         if config["MODEL_SETTING"] == "unimodal":
             self.model_setting = "unimodal"
             self.model = TEAChModelForActionGeneration(self.bart_config, config)
