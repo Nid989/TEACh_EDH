@@ -7,9 +7,9 @@ from utils import load_from_pickle, pad_seq
 
 data_types_ = Literal["train", "validation"]
 
-class TEACh_EDH_Dataset:
+class TEACh_GamePlan_Dataset:
     def __init__(self, config, tokenizer):
-        super(TEACh_EDH_Dataset, self).__init__()
+        super(TEACh_GamePlan_Dataset, self).__init__()
 
         self.config = config
         self.tokenizer = tokenizer
