@@ -4,8 +4,7 @@ from tqdm import tqdm
 from typing import Optional
 
 import torch
-import torch.nn as nn
-import nn.functional as F
+import torch.nn.functional as F
 from torch.optim import AdamW
 
 from transformers.models.bart.configuration_bart import BartConfig
