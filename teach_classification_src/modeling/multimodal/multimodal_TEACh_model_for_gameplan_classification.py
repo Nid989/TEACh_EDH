@@ -21,7 +21,6 @@ class MultimodalTokenClassifierOutput(TokenClassifierOutput):
     dialog_encoder_attentions: Optional[torch.FloatTensor] = None
     game_plan_encoder_attentions: Optional[torch.FloatTensor] = None
 
-
 class MultimodalTEAChModelforGamePlanClassification(BartPretrainedModel):
     def __init__(self,
                  config: BartConfig,
