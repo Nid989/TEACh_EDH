@@ -1,0 +1,31 @@
+PATH_TO_TRAIN_DATA: "./sample_data.pkl"
+PATH_TO_VALIDATION_DATA: "./sample_data.pkl"
+
+MODEL_CHECKPOINT: "facebook/bart-large"
+
+SOURCE_DIALOG_COLUMN: "processed_dialog_history"
+SOURCE_DIALOG_MAX_LEN: 512
+
+SOURCE_GAME_PLAN_COLUMN: "game_plan_history"
+SOURCE_GAME_PLAN_MAX_LEN: 512
+
+SOURCE_VISUAL_COLUMN: "driver_images_history_feats"
+SOURCE_VISUAL_MAX_LEN: 150
+SOURCE_VISUAL_DIM: 768
+
+UNQ_GAME_PLAN_INDEX_COUNT: 135
+
+TARGET_GAME_PLAN_COLUMN: "game_plan_future_indices"
+TARGET_GAME_PLAN_PADDING_IDX: 0 # `<pad>`
+TARGET_GAME_PLAN_MAX_LEN: 512
+
+MODEL_SETTING: "multimodal" # `unimodal` or `multimodal`
+
+BATCH_SIZE: 2
+MAX_EPOCHS: 20
+LEARNING_RATE: 1.0e-4
+WEIGHT_DECAY: 1.0e-6
+EARLY_STOPPING_THRESHOLD: 5
+
+PATH_TO_RESULT_OUTPUT_DIR: "./results/"
+PATH_TO_MODEL_OUTPUT_DIR: "./saved_models/"
