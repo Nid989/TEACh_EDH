@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from encoder_decoder_src.modeling.context_aware_attention import ContextAwareAttention
+from teach_encoder_decoder_src.modeling.context_aware_attention import ContextAwareAttention
 
 class DuoModalityProcessor(nn.Module):
 

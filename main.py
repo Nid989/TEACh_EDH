@@ -1,4 +1,4 @@
-from encoder_decoder_src.TEACh_trainer import TEAChTrainer
+from teach_encoder_decoder_src.TEACh_trainer import TEAChTrainer
 from utils import config
 
 if __name__ == "__main__":

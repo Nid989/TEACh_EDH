@@ -15,7 +15,7 @@ from transformers.models.bart.modeling_bart import (
 from transformers.modeling_outputs import BaseModelOutput
 from transformer_encoder import TransformerEncoder
 
-from encoder_decoder_src.modeling.multimodal.modality_aware_fusion import MAF
+from teach_encoder_decoder_src.modeling.multimodal.modality_aware_fusion import MAF
 
 class MultimodalBartEncoder(BartPretrainedModel):
     """

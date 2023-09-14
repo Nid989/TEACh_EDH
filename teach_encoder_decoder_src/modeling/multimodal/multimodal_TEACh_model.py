@@ -6,8 +6,8 @@ from transformers.modeling_outputs import (
     Seq2SeqModelOutput
 )
 
-from encoder_decoder_src.modeling.multimodal.multimodal_bart_encoder import MultimodalBartEncoder
-from encoder_decoder_src.modeling.multimodal.multimodal_action_decoder import MultimodalActionDecoder
+from teach_encoder_decoder_src.modeling.multimodal.multimodal_bart_encoder import MultimodalBartEncoder
+from teach_encoder_decoder_src.modeling.multimodal.multimodal_action_decoder import MultimodalActionDecoder
 
 class MultimodalTEAChModel(BartPretrainedModel):
     def __init__(self, config: BartConfig, util_config: dict):

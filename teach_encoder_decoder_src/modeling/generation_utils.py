@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 
-from encoder_decoder_src.modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
-from encoder_decoder_src.modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
+from teach_encoder_decoder_src.modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
+from teach_encoder_decoder_src.modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
 
 class Generation:
 

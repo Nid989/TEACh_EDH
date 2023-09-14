@@ -10,10 +10,10 @@ import torch.nn as nn
 from transformers.models.bart.configuration_bart import BartConfig
 from transformers import BartTokenizerFast
 
-from encoder_decoder_src.modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
-from encoder_decoder_src.modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
+from teach_encoder_decoder_src.modeling.multimodal.multimodal_TEACh_model_for_action_generation import MultimodalTEAChModelForActionGeneration
+from teach_encoder_decoder_src.modeling.unimodal.TEACh_model_for_action_generation import TEAChModelForActionGeneration
 from data_utils.teach_edh_dataset import TEACh_EDH_Dataset
-from encoder_decoder_src.modeling.generation_utils import Generation
+from teach_encoder_decoder_src.modeling.generation_utils import Generation
 from utils import prepare_for_training, pad_seq, check_and_create_directory
 
 def get_scores(pred_action_seq: list,
