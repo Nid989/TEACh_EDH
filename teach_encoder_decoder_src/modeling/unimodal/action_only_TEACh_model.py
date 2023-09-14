@@ -7,7 +7,7 @@ from transformers.modeling_outputs import (
 )
 
 from teach_encoder_decoder_src.modeling.unimodal.bart_action_encoder import BartActionEncoder
-from teach_encoder_decoder_src.bart_action_decoder import BartActionDecoder
+from teach_encoder_decoder_src.modeling.unimodal.bart_action_decoder import BartActionDecoder
 
 class ActionOnlyTEAChModel(BartPretrainedModel):
     def __init__(self, config: BartConfig, util_config: dict):
