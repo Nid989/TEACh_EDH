@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 import torch
+import pandas as pd
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import gc
@@ -15,8 +16,10 @@ class TEACh_GamePlan_Dataset:
         self.tokenizer = tokenizer
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_setting = config["MODEL_SETTING"] # `unimodal (lang & actions only)` or `multimodal`
-        self.train_dataset = load_from_pickle(self.config["PATH_TO_TRAIN_DATA"])
-        self.validation_dataset = load_from_pickle(self.config["PATH_TO_VALIDATION_DATA"])
+        # self.train_dataset = load_from_pickle(self.config["PATH_TO_TRAIN_DATA"])
+        # self.validation_dataset = load_from_pickle(self.config["PATH_TO_VALIDATION_DATA"])
+        self.train_dataset = pd.read_pickle(self.config["PATH_TO_TRAIN_DATA"])
+        self.validation_dataset = pd.read_pickle(self.config["PATH_TO_VALIDATION_DATA"])
         self.train_data_loader = self.set_up_data_loader(data_type="train") # convert to tensors & batch dataset items
         self.validation_data_loader = self.set_up_data_loader(data_type="validation") # convert to tensors & batch dataset items
 

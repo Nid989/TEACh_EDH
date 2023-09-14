@@ -7,3 +7,5 @@ modeling/multimodal/__pycache__
 results/
 results./
 .ipynb_checkpoints/
+action_weights.pt
+sample_data.pkl

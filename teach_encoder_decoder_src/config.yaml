@@ -1,5 +1,5 @@
-PATH_TO_TRAIN_DATA: "./data/sample_data.pkl"
-PATH_TO_VALIDATION_DATA: "./data/sample_data.pkl"
+PATH_TO_TRAIN_DATA: "./data/TEACh_dataset_w_actions_train.pkl"
+PATH_TO_VALIDATION_DATA: "./data/TEACh_dataset_w_actions_valid_seen.pkl"
 
 MODEL_CHECKPOINT: "facebook/bart-large"
 
@@ -37,7 +37,7 @@ NUM_DECODER_LAYERS: 6
 DROPOUT: 0.2
 
 RESULT_OUTPUT_DIR: "./results"
-MODEL_SETTING: "multimodal" # `unimodal` or `multimodal`
+MODEL_SETTING: "unimodal" # `unimodal` or `multimodal`
 
 # need to consider this in generation_utils.py
 MAX_PRED_LEN: 80 
