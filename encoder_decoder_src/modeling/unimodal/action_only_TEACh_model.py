@@ -6,10 +6,10 @@ from transformers.modeling_outputs import (
     Seq2SeqModelOutput
 )
 
-from modeling.multimodal.multimodal_bart_encoder import MultimodalBartEncoder
-from modeling.multimodal.multimodal_action_decoder import MultimodalActionDecoder
+from encoder_decoder_src.modeling.unimodal.bart_action_encoder import BartActionEncoder
+from encoder_decoder_src.bart_action_decoder import BartActionDecoder
 
-class MultimodalTEAChModel(BartPretrainedModel):
+class ActionOnlyTEAChModel(BartPretrainedModel):
     def __init__(self, config: BartConfig, util_config: dict):
         super().__init__(config)
 
@@ -20,8 +20,8 @@ class MultimodalTEAChModel(BartPretrainedModel):
         # We convert the unique action indices to a learned representation which will be further
         # utilized alongwith visual and text modality features to retrieve final representation.
         self.shared_action_embed = nn.Embedding(util_config["ACTION_COUNT"], util_config["ACTION_DIM"], util_config["ACTION_PADDING_IDX"])
-        self.encoder = MultimodalBartEncoder(config, util_config, self.shared, self.shared_action_embed)
-        self.decoder = MultimodalActionDecoder(util_config, self.shared_action_embed)
+        self.encoder = BartActionEncoder(config, util_config, self.shared, self.shared_action_embed)
+        self.decoder = BartActionDecoder(util_config, self.shared_action_embed)
         # =============================================================================== #
 
         self.init_weights()
@@ -46,11 +46,9 @@ class MultimodalTEAChModel(BartPretrainedModel):
         input_ids=None,
         attention_mask=None,
         action_input=None,      # New addition of action_input
-        visual_input=None,      # New addition of visual_input
         # decoder_input_ids=None,
         # decoder_attention_mask=None,
         decoder_action_input=None,      # New addition of decoder_action_input
-        decoder_visual_input=None,      # New addition of decoder_visual_input
         head_mask=None,
         # decoder_head_mask=None,
         # cross_attn_head_mask=None,
@@ -76,7 +74,6 @@ class MultimodalTEAChModel(BartPretrainedModel):
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 action_input=action_input,      # New addition of action_input
-                visual_input=visual_input,      # New addition of visual_input
                 head_mask=head_mask,
                 inputs_embeds=inputs_embeds,
                 output_attentions=output_attentions,
@@ -93,12 +90,11 @@ class MultimodalTEAChModel(BartPretrainedModel):
 
         # ================================ Modifications ================================ #
         decoder_outputs = self.decoder(
-            decoder_action_input=decoder_action_input, 
-            decoder_visual_input=decoder_visual_input,
+            decoder_action_input=decoder_action_input,
             encoder_hidden_states=encoder_outputs[0]
         )
         # =============================================================================== #
-        
+
         if not return_dict:
             return decoder_outputs + encoder_outputs
 

@@ -8,7 +8,7 @@ from transformers.models.bart.modeling_bart import (
 )
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
-from modeling.unimodal.action_only_TEACh_model import ActionOnlyTEAChModel
+from encoder_decoder_src.modeling.unimodal.action_only_TEACh_model import ActionOnlyTEAChModel
 
 class TEAChModelForActionGeneration(BartPretrainedModel):
 
@@ -63,7 +63,7 @@ class TEAChModelForActionGeneration(BartPretrainedModel):
         if labels is not None:
             # replace indices with pad_tokens in `labels` and set to -100
             # since masked (-100) tokens are ignored while computing loss
-            mask = (labels.clone() == self.config["ACTION_PADDING_IDX"])
+            mask = (labels.clone() == self.util_config["ACTION_PADDING_IDX"])
             labels[mask] = -100
             # object_labels[mask] = -100
             labels.to(torch.long)
