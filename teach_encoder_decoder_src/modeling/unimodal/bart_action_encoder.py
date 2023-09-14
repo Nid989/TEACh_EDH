@@ -15,7 +15,7 @@ from transformers.models.bart.modeling_bart import (
 from transformers.modeling_outputs import BaseModelOutput
 from transformer_encoder import TransformerEncoder
 
-from teach_encoder_decoder_src.dual_modality_processor import DuoModalityProcessor
+from teach_encoder_decoder_src.modeling.unimodal.dual_modality_processor import DuoModalityProcessor
 
 class BartActionEncoder(BartPretrainedModel):
     """
