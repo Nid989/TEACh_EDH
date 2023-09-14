@@ -20,29 +20,33 @@ from teach_classification_src.modeling.multimodal.multimodal_TEACh_model_for_gam
 def get_scores(p, labels_list, full_rep: bool=False):
     predictions, labels = p
 
-    ignore_idx_list = [-100] # pad token
+    ignore_idx_list = [0, -100] # pad token
 
     true_predictions = [
         [labels_list[p] for (p, l) in zip(prediction, label) if l not in ignore_idx_list]
         for prediction, label in zip(predictions, labels)
     ]
 
+    print(true_predictions)
+
     true_labels = [
         [labels_list[l] for (p, l) in zip(prediction, label) if l not in ignore_idx_list]
         for prediction, label in zip(predictions, labels)
     ]
 
+    print(true_labels)
+
     results = seqeval.compute(predictions=true_predictions, references=true_labels, zero_division=False)
 
     if full_rep:
-        return results
+        return results, (true_predictions, true_labels)
     else:
         return {
             "precision": results["overall_precision"],
             "recall": results["overall_recall"],
             "f1": results["overall_f1"],
             "accuracy": results["overall_accuracy"],
-        }
+        }, (true_predictions, true_labels)
 
 def evaluate_teach_data_scores(pred_action_seq: list,
                gt_action_seq: list) -> Optional[dict]:
@@ -285,11 +289,11 @@ class TEAChTrainer:
                                             data_loader,
                                             desc=desc,
                                             **gen_kwargs)
-        result = get_scores(p=(predictions, gold),
+        result, (true_predictions, true_labels) = get_scores(p=(predictions, gold),
                             labels_list=self.action_object_tuple_vocab)
 
         if "Validation" in desc:
-            val_df = pd.DataFrame(list(zip(gold, predictions)), columns=['target_actions', 'predicted_actions'])
+            val_df = pd.DataFrame(list(zip(true_labels, true_predictions)), columns=['target_game_plan_future', 'predicted_game_plan_future'])
             PATH_TO_RESULT_OUTPUT_DIR = self.config["PATH_TO_RESULT_OUTPUT_DIR"]
             file_name = check_and_create_directory(PATH_TO_RESULT_OUTPUT_DIR + "./val/") + "./TEACh_epoch_" + str(epoch+1) + "_val_results.csv"
             val_df.to_csv(file_name, index=False)
