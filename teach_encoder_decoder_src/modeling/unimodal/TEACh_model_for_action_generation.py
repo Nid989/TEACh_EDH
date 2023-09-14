@@ -8,7 +8,7 @@ from transformers.models.bart.modeling_bart import (
 )
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
-from teach_.modeling.unimodal.action_only_TEACh_model import ActionOnlyTEAChModel
+from teach_encoder_decoder_src.modeling.unimodal.action_only_TEACh_model import ActionOnlyTEAChModel
 
 class TEAChModelForActionGeneration(BartPretrainedModel):
 
