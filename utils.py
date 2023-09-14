@@ -16,9 +16,6 @@ def load_from_yaml(path_to_file: str):
         _dict = yaml.safe_load(file)
     return _dict
 
-path_to_config_file = "./config.yaml"
-config = load_from_yaml(path_to_file=path_to_config_file)
-
 def load_from_txt(path_to_file: str):
     print(f"loading data from .txt file @ {path_to_file}")
     with open (path_to_file, "r") as myfile:
