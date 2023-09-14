@@ -98,7 +98,7 @@ class TEAChTrainer:
 
         self.tokenizer = BartTokenizerFast.from_pretrained(config["MODEL_CHECKPOINT"], add_prefix_space=True)
 
-        self.action_object_tuple_vocab = torch.load("./action_object_tuple_vocab.pt").to_dict()["index2word"]
+        self.action_object_tuple_vocab = torch.load(config["PATH_TO_ACTION_OBJECT_TUPLE_VOCAB"]).to_dict()["index2word"]
 
         self.dataset = TEACh_GamePlan_Dataset(config, self.tokenizer)
         self.train_data_loader = self.dataset.train_data_loader

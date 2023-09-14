@@ -1,5 +1,5 @@
-PATH_TO_TRAIN_DATA: "./sample_data.pkl"
-PATH_TO_VALIDATION_DATA: "./sample_data.pkl"
+PATH_TO_TRAIN_DATA: "./data/sample_data.pkl"
+PATH_TO_VALIDATION_DATA: "./data/sample_data.pkl"
 
 MODEL_CHECKPOINT: "facebook/bart-large"
 
@@ -26,6 +26,8 @@ MAX_EPOCHS: 20
 LEARNING_RATE: 1.0e-4
 WEIGHT_DECAY: 1.0e-6
 EARLY_STOPPING_THRESHOLD: 5
+
+PATH_TO_ACTION_OBJECT_TUPLE_VOCAB: "./data/action_object_tuple_vocab.pt"
 
 PATH_TO_RESULT_OUTPUT_DIR: "./results/"
 PATH_TO_MODEL_OUTPUT_DIR: "./saved_models/"
