@@ -4,11 +4,12 @@ from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from torch.nn import CrossEntropyLoss
 from transformers.models.bart.configuration_bart import BartConfig
 from transformers.models.bart.modeling_bart import BartPretrainedModel
 from transformers.modeling_outputs import TokenClassifierOutput
-from teach_classification_src.modeling.multimodal.multimodal_TEACh_model import MultimodalTEAChModel
+
+from teach_classification_src.modeling.multimodal.legacy.multimodal_TEACh_model import MultimodalTEAChModel
 
 @dataclass
 class MultimodalTokenClassifierOutput(TokenClassifierOutput):
@@ -39,6 +40,8 @@ class MultimodalTEAChModelforGamePlanClassification(BartPretrainedModel):
         )
 
         self.dropout = nn.Dropout(classifier_dropout)
+        self.output_attention_layer = nn.MultiheadAttention(embed_dim=config.d_model,
+                                                     num_heads=4)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # Initialize weights and apply final processing
@@ -65,7 +68,7 @@ class MultimodalTEAChModelforGamePlanClassification(BartPretrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if labels is not None:
-            labels = labels.to(torch.float32)
+            labels[labels == self.util_config["TARGET_GAME_PLAN_PADDING_IDX"]] = -100
 
         outputs = self.mmt_model(
             input_ids,
@@ -79,33 +82,19 @@ class MultimodalTEAChModelforGamePlanClassification(BartPretrainedModel):
             return_dict=return_dict,
         )
 
-        pooled_output = outputs[1]
+        sequence_output = outputs[0]
+        # apply attention_layer for output-context
+        sequence_output, _ = self.output_attention_layer(query=sequence_output,
+                                                         key=sequence_output,
+                                                         value=sequence_output)
 
-        pooled_output = self.dropout(pooled_output)
-        logits = self.classifier(pooled_output)
+        sequence_output = self.dropout(sequence_output)
+        logits = self.classifier(sequence_output)
 
         loss = None
         if labels is not None:
-            if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                    self.config.problem_type = "single_label_classification"
-                else:
-                    self.config.problem_type = "multi_label_classification"
-
-            if self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                if self.num_labels == 1:
-                    loss = loss_fct(logits.squeeze(), labels.squeeze())
-                else:
-                    loss = loss_fct(logits, labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits, labels)
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
         if not return_dict:
             output = (logits,) + outputs[2:]

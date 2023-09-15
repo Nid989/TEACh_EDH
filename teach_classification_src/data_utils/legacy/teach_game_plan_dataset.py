@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import gc
 from utils import load_from_pickle, pad_seq
-from sklearn.preprocessing import MultiLabelBinarizer
 
 data_types_ = Literal["train", "validation"]
 
@@ -16,13 +15,11 @@ class TEACh_GamePlan_Dataset:
         self.config = config
         self.tokenizer = tokenizer
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        self.action_object_tuple_vocab = torch.load(config["PATH_TO_ACTION_OBJECT_TUPLE_VOCAB"]).to_dict()["index2word"]
-        self.mlb = MultiLabelBinarizer(classes=self.action_object_tuple_vocab)
-
         self.model_setting = config["MODEL_SETTING"] # `unimodal (lang & actions only)` or `multimodal`
-        self.train_dataset = load_from_pickle(self.config["PATH_TO_TRAIN_DATA"])
-        self.validation_dataset = load_from_pickle(self.config["PATH_TO_VALIDATION_DATA"])
+        # self.train_dataset = load_from_pickle(self.config["PATH_TO_TRAIN_DATA"])
+        # self.validation_dataset = load_from_pickle(self.config["PATH_TO_VALIDATION_DATA"])
+        self.train_dataset = pd.read_pickle(self.config["PATH_TO_TRAIN_DATA"])
+        self.validation_dataset = pd.read_pickle(self.config["PATH_TO_VALIDATION_DATA"])
         self.train_data_loader = self.set_up_data_loader(data_type="train") # convert to tensors & batch dataset items
         self.validation_data_loader = self.set_up_data_loader(data_type="validation") # convert to tensors & batch dataset items
 
@@ -61,16 +58,12 @@ class TEACh_GamePlan_Dataset:
         model_inputs["game_plan_input_ids"] = torch.tensor([item for item in game_plan_encodings['input_ids']], dtype=torch.long, device=self.device)
         model_inputs["game_plan_attention_mask"] = torch.tensor([item for item in game_plan_encodings['attention_mask']], dtype=torch.long, device=self.device)
 
-
-        model_inputs["labels"] = torch.stack([torch.from_numpy(self.mlb.fit_transform([item])).to(torch.int64) \
-                                             for item in dataset[self.config["TARGET_GAME_PLAN_COLUMN"]].values.tolist()], 0).to(self.device)
-
-        # model_inputs["labels"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.int64).unsqueeze(dim=1),
-        #                                               dim=1,
-        #                                               max_len=self.config["TARGET_GAME_PLAN_MAX_LEN"],
-        #                                               pad_token_id=self.config["TARGET_GAME_PLAN_PADDING_IDX"])
-        #                                       for item in dataset[self.config["TARGET_GAME_PLAN_COLUMN"]].values.tolist()], 0).to(self.device)
-
+        # target_actions (`labels`)
+        model_inputs["labels"] = torch.stack([pad_seq(torch.tensor(item, dtype=torch.int64).unsqueeze(dim=1),
+                                                      dim=1,
+                                                      max_len=self.config["TARGET_GAME_PLAN_MAX_LEN"],
+                                                      pad_token_id=self.config["TARGET_GAME_PLAN_PADDING_IDX"])
+                                              for item in dataset[self.config["TARGET_GAME_PLAN_COLUMN"]].values.tolist()], 0).to(self.device)
 
         if self.model_setting == "multimodal":
             # pad visual feats i.e. driver_images_history_feats & driver_images_future_feats
@@ -110,7 +103,7 @@ class TEACh_GamePlan_Dataset:
                 dataset["attention_mask"],
                 dataset["game_plan_input_ids"],
                 dataset["game_plan_attention_mask"],
-                dataset["labels"].squeeze(1).to(torch.float32)
+                dataset["labels"].squeeze(-1).to(torch.int64)
             )
         elif self.model_setting == "multimodal":
             dataset = TensorDataset(
@@ -119,7 +112,7 @@ class TEACh_GamePlan_Dataset:
                 dataset["game_plan_input_ids"],
                 dataset["game_plan_attention_mask"],
                 dataset["visual_input"],
-                dataset["labels"].squeeze(1).to(torch.float32)
+                dataset["labels"].squeeze(-1).to(torch.int64)
             )
         else:
             raise ValueError(f"provide an appropriate `model-setting` for further processing; found {self.config['MODEL_SETTING']}, instead of `unimodal` or `multimodal`")

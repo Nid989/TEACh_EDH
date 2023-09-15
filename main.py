@@ -1,4 +1,4 @@
-from teach_classification_src.TEACh_trainer import TEAChTrainer as TEAChTrainer_Cls
+from teach_classification_src.legacy.TEACh_trainer import TEAChTrainer as TEAChTrainer_Cls
 from teach_encoder_decoder_src.TEACh_trainer import TEAChTrainer as TEAChTrainer_EncDec
 from utils import load_from_yaml
 

@@ -1,9 +1,7 @@
 import gc
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from typing import Optional, List
-from sklearn.metrics import classification_report
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -12,41 +10,43 @@ from torch.optim import AdamW
 from transformers.models.bart.configuration_bart import BartConfig
 from transformers import BartTokenizerFast
 
+from evaluate import load
+seqeval = load("seqeval")
+
 from utils import check_and_create_directory
-from teach_classification_src.modeling.multimodal.multimodal_TEACh_model_for_gameplan_classification import MultimodalTEAChModelforGamePlanClassification
 from teach_classification_src.data_utils.teach_game_plan_dataset import TEACh_GamePlan_Dataset
+from teach_classification_src.modeling.multimodal.legacy.multimodal_TEACh_model_for_gameplan_classification import MultimodalTEAChModelforGamePlanClassification
 
-def get_scores(p, labels_list: List[str], threshold: int=0.5):
+def get_scores(p, labels_list, full_rep: bool=False):
     predictions, labels = p
-    
-    y_pred = np.array(predictions)
-    y_true = np.array(labels)
 
-    upper, lower = 1, 0
-    y_pred = np.where(y_pred > threshold, upper, lower)
+    ignore_idx_list = [0, -100] # pad token
 
-    results = classification_report(
-        y_true,
-        y_pred,
-        target_names=labels_list,
-        output_dict=True,
-        zero_division=0
-    )
+    true_predictions = [
+        [labels_list[p] for (p, l) in zip(prediction, label) if l not in ignore_idx_list]
+        for prediction, label in zip(predictions, labels)
+    ]
 
-    # results["accuracy"] = accuracy_score(y_true.flatten(), y_pred.flatten()).item()
+    print(true_predictions)
 
-    true_predictions = [np.array(labels_list)[y_pred[i].astype(bool)].tolist() \
-                        for i in range(y_true.shape[0])]
+    true_labels = [
+        [labels_list[l] for (p, l) in zip(prediction, label) if l not in ignore_idx_list]
+        for prediction, label in zip(predictions, labels)
+    ]
 
-    true_labels = [np.array(labels_list)[y_true[i].astype(bool)].tolist() \
-                   for i in range(y_true.shape[0])]
+    print(true_labels)
 
-    return {
-        "precision": results["micro avg"]["precision"],
-        "recall": results["micro avg"]["recall"],
-        "f1": results["micro avg"]["f1-score"],
-        # "accuracy": results["accuracy"],
-    }, (true_predictions, true_labels)
+    results = seqeval.compute(predictions=true_predictions, references=true_labels, zero_division=False)
+
+    if full_rep:
+        return results, (true_predictions, true_labels)
+    else:
+        return {
+            "precision": results["overall_precision"],
+            "recall": results["overall_recall"],
+            "f1": results["overall_f1"],
+            "accuracy": results["overall_accuracy"],
+        }, (true_predictions, true_labels)
 
 def evaluate_teach_data_scores(pred_action_seq: list,
                gt_action_seq: list) -> Optional[dict]:
@@ -85,8 +85,7 @@ class TEAChTrainer:
         self.config = config
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        self.bart_config = BartConfig.from_pretrained(config["MODEL_CHECKPOINT"], num_labels=config["NUM_CLASSES"])
-        self.bart_config.classifier_dropout = 0.2 # additional classifier dropout
+        self.bart_config = BartConfig.from_pretrained(config["MODEL_CHECKPOINT"], num_labels=config["UNQ_GAME_PLAN_INDEX_COUNT"])
 
         if config["MODEL_SETTING"] == "unimodal":
             pass
@@ -136,8 +135,8 @@ class TEAChTrainer:
 
             print("Epoch: {}\ttrain_loss: {}\tval_loss: {}\tmin_validation_loss: {}".format(epoch+1, train_loss, val_loss, min(val_losses)))
 
-            print("val_precision: {:0.2f}\tval_recall: {:0.2f}\tval_f1: {:0.2f}".format(
-                val_results["precision"], val_results["recall"], val_results["f1"]))
+            print("val_precision: {:0.2f}\tval_recall: {:0.2f}\tval_f1: {:0.2f}\tval_accuracy: {:0.2f}".format(
+                val_results["precision"], val_results["recall"], val_results["f1"], val_results["accuracy"]))
 
     def train_epoch(self,
                     model,
@@ -257,10 +256,11 @@ class TEAChTrainer:
                     )
 
                 if outputs:
-                    predictions = F.sigmoid(outputs.logits).cpu().tolist()
+                    probabilities = F.softmax(outputs.logits, dim=-1)
+                    predictions = probabilities.argmax(dim=-1).cpu().tolist()
 
                     out_predictions.extend(predictions)
-                    gold.extend(labels.to(torch.int64).cpu().tolist())
+                    gold.extend(labels.cpu().tolist())
 
         del batch
         del input_ids
@@ -269,6 +269,7 @@ class TEAChTrainer:
         del game_plan_attention_mask
         del labels
         del outputs
+        del probabilities
         del predictions
         if self.model_setting == "multimodal":
             del visual_input
