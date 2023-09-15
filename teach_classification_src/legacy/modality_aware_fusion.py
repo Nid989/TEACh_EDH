@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from teach_classification_src.modeling.context_aware_attention import ContextAwareAttention
+from teach_classification_src.legacy.context_aware_attention import ContextAwareAttention
 
 class MAF(nn.Module):
 

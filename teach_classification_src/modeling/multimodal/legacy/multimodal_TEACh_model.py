@@ -1,17 +1,24 @@
+import gc
 from typing import Optional, Tuple
+from dataclasses import dataclass
+
 import torch
 import torch.nn as nn
+from transformers.models.bart.configuration_bart import BartConfig
+from transformers.modeling_outputs import (
+    Seq2SeqModelOutput
+)
 from transformers.models.bart.modeling_bart import (
     BartPretrainedModel,
     BartEncoder
-) 
-from transformers.models.bart.configuration_bart import BartConfig
-from transformers.modeling_outputs import Seq2SeqModelOutput
+)
+from transformers.modeling_outputs import TokenClassifierOutput
 from transformer_encoder import TransformerEncoder
+
+from teach_classification_src.legacy.modality_aware_fusion import MAF
 
 @dataclass
 class MultimodalSeq2SeqModelOutput(Seq2SeqModelOutput):
-    pooler_output: Optional[torch.FloatTensor] = None
     dialog_encoder_last_hidden_state: Optional[torch.FloatTensor] = None
     game_plan_encoder_last_hidden_state: Optional[torch.FloatTensor] = None
     visual_hidden_states: Optional[torch.FloatTensor] = None
@@ -19,42 +26,7 @@ class MultimodalSeq2SeqModelOutput(Seq2SeqModelOutput):
     game_plan_encoder_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     dialog_encoder_attentions: Optional[torch.FloatTensor] = None
     game_plan_encoder_attentions: Optional[torch.FloatTensor] = None
-
-class PositionalEncoding(nn.Module):
-
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
-        super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
-        pe = torch.zeros(max_len, 1, d_model)
-        pe[:, 0, 0::2] = torch.sin(position * div_term)
-        pe[:, 0, 1::2] = torch.cos(position * div_term)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Arguments:
-            x: Tensor, shape ``[seq_len, batch_size, embedding_dim]``
-        """
-        x = x + self.pe[:x.size(0)]
-        return self.dropout(x)
     
-class Multimodal_Pooler(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.activation = nn.Tanh()
-
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        # We "pool" the model by simply taking the hidden state corresponding
-        # to the first token.
-        first_token_tensor = hidden_states[:, 0]
-        pooled_output = self.dense(first_token_tensor)
-        pooled_output = self.activation(pooled_output)
-        return pooled_output
-
 class MultimodalTEAChModel(BartPretrainedModel):
     def __init__(self, config: BartConfig,
                  util_config: dict,
@@ -72,19 +44,14 @@ class MultimodalTEAChModel(BartPretrainedModel):
         self.dialog_encoder = BartEncoder(config, self.shared)
         self.game_plan_encoder = BartEncoder(config, self.shared)
 
-        self.visual_transform = nn.Linear(util_config["SOURCE_VISUAL_DIM"], config.d_model)
-        self.visual_dropout = nn.Dropout(util_config["VISUAL_DROPOUT"])
-        # maybe add a layernorm after the projection of visual feats to d_model
-
-        self.pos_enc_layer = PositionalEncoding(d_model=config.d_model,
-                                               dropout=0.2)
-
-        self.multimodal_encoder = TransformerEncoder(d_model=config.d_model,
-                                                     n_layers=6,
+        # NOTE: Literally we can omit this!
+        self.visual_transformer = TransformerEncoder(d_model=self.util_config["SOURCE_VISUAL_DIM"],
+                                                     n_layers=4,
                                                      n_heads=8,
-                                                     d_ff=config.d_model)
-
-        self.multimodal_pooler = Multimodal_Pooler(config=config)
+                                                     d_ff=self.util_config["SOURCE_VISUAL_DIM"])
+        self.MAF_layer = MAF(util_config=self.util_config,
+                             dim_model=self.config.d_model, # embed_dim
+                             dropout_rate=0.2)
 
         if freeze_encoders:
             # Freeze the parameters of dialog_encoder
@@ -154,19 +121,12 @@ class MultimodalTEAChModel(BartPretrainedModel):
             return_dict=return_dict,
         )
 
-        # project the visual to same dimensionality as config.d_model
-        visual_input = self.visual_dropout(self.visual_transform(visual_input))
+        visual_input = self.visual_transformer(visual_input, mask=None)
 
-        # concatenate and apply positional/temporal encodings
-        hidden_states = torch.cat((dialog_encoder_outputs.last_hidden_state,
-                                   visual_input,
-                                   game_plan_encoder_outputs.last_hidden_state), dim=1)
-        hidden_states = self.pos_enc_layer(hidden_states)
+        hidden_states = self.MAF_layer(text_input=dialog_encoder_outputs[0],
+                                       game_plan_context=game_plan_encoder_outputs[0],
+                                       visual_context=visual_input)
 
-        # apply contextualization via a TransformerEncoder call
-        hidden_states = self.multimodal_encoder(hidden_states, mask=None)
-
-        pooled_output = self.multimodal_pooler(hidden_states)
         # =============================================================================== #
 
         if not return_dict:
@@ -174,7 +134,6 @@ class MultimodalTEAChModel(BartPretrainedModel):
 
         return MultimodalSeq2SeqModelOutput(
             last_hidden_state=hidden_states,
-            pooler_output=pooled_output,
             dialog_encoder_last_hidden_state=dialog_encoder_outputs.last_hidden_state,
             game_plan_encoder_last_hidden_state=game_plan_encoder_outputs.last_hidden_state,
             visual_hidden_states=visual_input,
