@@ -9,3 +9,4 @@ results./
 .ipynb_checkpoints/
 action_weights.pt
 sample_data.pkl
+sample_data_valid.pkl
