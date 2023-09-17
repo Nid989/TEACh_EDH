@@ -256,7 +256,7 @@ def get_feat_shape(visual_archi, compress_type=None):
         feat_shape = (-1, 2048, 7, 7)
     elif visual_archi == "maskrcnn":
         # the RCNN model should be trained with min_size=800
-        feat_shape = (-1, 2048, 10, 10)
+        feat_shape = (-1, 2048, 25, 25)
     elif visual_archi == "resnet18":
         feat_shape = (-1, 512, 7, 7)
     else:

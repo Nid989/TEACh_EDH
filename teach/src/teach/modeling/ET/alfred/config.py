@@ -13,7 +13,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 def cfg_exp():
     # HIGH-LEVEL MODEL SETTINGS
     # where to save model and/or logs
-    name = "default"
+    name = "et_plus_bart_base"
     # model to use
     model = "transformer"
     # which device to use
@@ -31,7 +31,7 @@ def cfg_exp():
     # DATA SETTINGS
     data = {
         # dataset name(s) for training and validation
-        "train": "lmdb_teach_edh",
+        "train": "lmdb_teach_edh_all",
         # additional dataset name(s) can be specified for validation only
         "valid": "",
         # specify the length of each dataset
@@ -79,7 +79,7 @@ def cfg_eval():
     x_display = "0"
     # range of checkpoints to evaluate, (9, 20, 2) means epochs 9, 11, 13, 15, 17, 19
     # if None, only 'latest.pth' will be evaluated
-    eval_range = (9, 20, 1)
+    eval_range = (17, 20, 2)
     # object predictor path
     object_predictor = None
 
@@ -111,9 +111,9 @@ def cfg_train():
 
     # HYPER PARAMETERS
     # batch size
-    batch = 8
+    batch = 8 #8
     # number of epochs
-    epochs = 20
+    epochs = 20 #20
     # optimizer type, must be in ('adam', 'adamw')
     optimizer = "adamw"
     # L2 regularization weight
@@ -157,9 +157,9 @@ def cfg_train():
 
     # TRANSFORMER settings
     # size of transformer embeddings
-    demb = 768
+    demb = 768 #1024 (LARGE)
     # number of heads in multi-head attention
-    encoder_heads = 12
+    encoder_heads = 12 #16
     # number of layers in transformer encoder
     encoder_layers = 2
     # how many previous actions to use as input
@@ -174,8 +174,8 @@ def cfg_train():
     # which decoder to use for the speaker model
     decoder_lang = {
         "layers": 2,
-        "heads": 12,
-        "demb": 768,
+        "heads": 16, #12,
+        "demb": 1024, #768
         "dropout": 0.1,
         "pos_enc": True,
     }
@@ -209,6 +209,13 @@ def cfg_train():
         "token": False,
         # dataset id learned encoding
         "dataset": False,
+    }
+
+    # ENCODER TYPE
+    encoder_type = {
+        # Which BART Type to use, or use base transformer encoder layer
+        # BASE, BART, BART_SYNTH (Finetuned on ET synthetic data)
+        "TYPE" : "BART"
     }
 
     use_alfred_weights = False

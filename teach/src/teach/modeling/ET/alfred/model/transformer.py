@@ -1,7 +1,7 @@
 import torch
 from alfred.model import base
 from alfred.nn.dec_object import ObjectClassifier
-from alfred.nn.enc_lang import EncoderLang
+from alfred.nn.enc_lang import EncoderLang, EncoderLangBART
 from alfred.nn.enc_visual import FeatureFlat
 from alfred.nn.enc_vl import EncoderVL
 from alfred.nn.encodings import DatasetLearnedEncoding
@@ -20,7 +20,13 @@ class Model(base.Model):
         # encoder and visual embeddings
         self.encoder_vl = EncoderVL(args)
         # pre-encoder for language tokens
-        self.encoder_lang = EncoderLang(args.encoder_lang["layers"], args, embs_ann)
+        if args.encoder_type["TYPE"] == "BART":
+            self.encoder_lang = EncoderLangBART(args.encoder_lang["layers"], args, embs_ann)
+            self.BART_FLAG = 1
+        else:
+            self.encoder_lang = EncoderLang(args.encoder_lang["layers"], args, embs_ann)
+            self.BART_FLAG = 0
+        
         # feature embeddings
         self.vis_feat = FeatureFlat(input_shape=self.visual_tensor_shape, output_size=args.demb)
         # dataset id learned encoding (applied after the encoder_lang)
@@ -54,9 +60,13 @@ class Model(base.Model):
         """
         forward the model for multiple time-steps (used for training)
         """
+        
         # embed language
         output = {}
-        emb_lang, lengths_lang = self.embed_lang(inputs["lang"], vocab)
+        if self.BART_FLAG:
+            emb_lang, lengths_lang = self.embed_lang_bart(inputs["lang"])
+        else:
+            emb_lang, lengths_lang = self.embed_lang(inputs["lang"], vocab)
         emb_lang = self.dataset_enc(emb_lang, vocab) if self.dataset_enc else emb_lang
 
         # embed frames and actions
@@ -106,11 +116,20 @@ class Model(base.Model):
         """
         take a list of annotation tokens and extract embeddings with EncoderLang
         """
+
         assert lang_pad.max().item() < len(vocab)
         embedder_lang = self.embs_ann[vocab.name]
         emb_lang, lengths_lang = self.encoder_lang(lang_pad, embedder_lang, vocab, self.pad)
         if self.args.detach_lang_emb:
             emb_lang = emb_lang.clone().detach()
+
+        return emb_lang, lengths_lang
+    
+    def embed_lang_bart(self, lang_pad):
+        """
+        take a list of annotation tokens and extract embeddings with EncoderLangBART
+        """
+        emb_lang, lengths_lang = self.encoder_lang(lang_pad)
         return emb_lang, lengths_lang
 
     def embed_frames(self, frames_pad):

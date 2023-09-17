@@ -1,5 +1,6 @@
 import torch
 from alfred.nn.encodings import InstrLangEncoding, PosLangEncoding
+from transformers import BartTokenizer, BartForConditionalGeneration
 from torch import nn
 
 
@@ -87,3 +88,46 @@ class EncoderLang(nn.Module):
         emb_lang = self.enc_dropout(emb_lang)
         emb_lang = self.enc_layernorm(emb_lang)
         return emb_lang
+
+
+
+# ADD Bart Encoder class
+class EncoderLangBART(nn.Module):
+    def __init__(
+        self,
+        args,
+        subgoal_token="<<instr>>",
+        goal_token="<<goal>>",
+    ):
+        """
+        BART-large encoder for language inputs
+        """
+        super(EncoderLangBART, self).__init__()
+        self.subgoal_token = subgoal_token
+        self.goal_token = goal_token
+
+        # BART-large model
+        model_name = "facebook/bart-base"
+        tokenizer = BartTokenizer.from_pretrained(model_name)
+        model = BartForConditionalGeneration.from_pretrained(model_name)
+        self.bart_model = model
+        self.tokenizer = tokenizer
+
+        # self.enc_layernorm = nn.LayerNorm(args.demb)
+        # self.enc_dropout = nn.Dropout(args.dropout["lang"], inplace=True)
+
+    def forward(self, lang_pad):
+        """
+        Encode language text using BART-large model
+        """
+    
+        # Encode the input using BART
+        outputs = self.bart_model(lang_pad, return_dict=True)
+        hiddens = outputs.encoder_last_hidden_state
+
+        # Compute lengths of non-padded sequences
+        lengths = torch.tensor([lang_pad.shape[1]] * lang_pad.shape[0])
+#         lengths = (lang_pad != self.tokenizer.pad_token_id).sum(dim=1)
+
+        return hiddens, lengths
+
