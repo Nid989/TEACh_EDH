@@ -14,7 +14,7 @@ class TEAChModelForActionGeneration(BartPretrainedModel):
 
     def __init__(self, config: BartConfig, util_config: dict):
         super().__init__(config)
-
+        # TODO: need to freeze self.model parameters except for the MAF module weights or maybe freeze the Decoder layer parameters.
         self.config = config
         self.util_config = util_config
         self.model = ActionOnlyTEAChModel(config=config, util_config=util_config)
