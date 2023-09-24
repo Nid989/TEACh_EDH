@@ -4,25 +4,8 @@
 /data
     create_lmdb.py       (script to create an LMDB dataset out of trajectory files)
     preprocessor.py      (class to preprocess trajectories annotations and actions)
-    process_tests.py     (script to process test splits for leaderboard evaluation)
-    zoo/base.py          (base class for LMDB dataset loading using multiple threads)
-    zoo/alfred.py        (class to load an LMDB dataset for an E.T. training)
-    zoo/speaker.py       (class to load an LMDB dataset for a translation pretraining)
-/env
-    reward.py            (rewards definitions)
-    tasks.py             (tasks definitions)
-    thor_env.py          (interface between AI2Thor and E.T. code)
-/eval
-    eval_agent.py        (script to evaluate an agent on full tasks or subgoals)
-    eval_master.py       (class for multi-process evaluation)
-    eval_subgoals.py     (functions for subgoal evaluation)
-    eval_task.py         (functions for full task evaluation)
-    leaderboard.py       (script to evaluate an agent on test splits)
-/gen
-    constants.py         (list of constants)
-    generate_trajs.py    (script to generate new trajectories)
-    goal_library.py      (library defining goals using PDDL)
-    render_trajs.py      (script to render existing trajectories)
+    preprocessor_et.py   (class to preprocess trajectories annotations and actions for original ET model)
+    zoo/base.py          (base class for LMDB dataset loading using multiple threads
 /model
     train.py             (script for models training)
     base.py              (base class for E.T. and translator models)
