@@ -95,6 +95,7 @@ def gather_jsons(files, output_path):
 
 
 def get_preprocessor(PreprocessorClass, subgoal_ann, lock, vocab_path=None, task_type="edh"):
+    print("vocab_path inside get_preprocesor", vocab_path)
     if vocab_path is None:
         init_words = ["<<pad>>", "<<seg>>", "<<goal>>", "<<mask>>"]
     else:
@@ -106,6 +107,7 @@ def get_preprocessor(PreprocessorClass, subgoal_ann, lock, vocab_path=None, task
     }
     if vocab_path is not None:
         vocabs_loaded = torch.load(vocab_path)
+        print(vocabs_loaded)
         for vocab_name, vocab in vocabs_with_lock.items():
             loaded_dict = vocabs_loaded[vocab_name].to_dict()
             for _i, w in enumerate(loaded_dict["index2word"]):

@@ -16,12 +16,15 @@ class Model(base.Model):
         transformer agent
         """
         super().__init__(args, embs_ann, vocab_out, pad, seg, for_inference)
-
+        
         # encoder and visual embeddings
         self.encoder_vl = EncoderVL(args)
         # pre-encoder for language tokens
-        if args.encoder_type["TYPE"] == "BART":
-            self.encoder_lang = EncoderLangBART(args.encoder_lang["layers"], args, embs_ann)
+        if args.use_bart_model == True:
+            self.encoder_lang = EncoderLangBART(args)
+            # freezing `BartModel` parameters/weights.
+            for param in self.encoder_lang.parameters():
+                param.requires_grad = False
             self.BART_FLAG = 1
         else:
             self.encoder_lang = EncoderLang(args.encoder_lang["layers"], args, embs_ann)
@@ -52,6 +55,11 @@ class Model(base.Model):
         if self.args.subgoal_aux_loss_wt > 0:
             self.dec_subgoal = nn.Linear(encoder_output_size, 1)
 
+        # learn priority weights for `action_loss` & `object_loss` 
+        if self.args.learn_action_object_loss_wt:
+            self.action_loss_wt = nn.Parameter(torch.abs(torch.randn(1) * 0.01))
+            self.object_loss_wt = nn.Parameter(torch.abs(torch.randn(1) * 0.01))
+            
         # final touch
         self.init_weights()
         self.reset()
@@ -205,7 +213,10 @@ class Model(base.Model):
         if not self.args.compute_train_loss_over_history:
             action_loss *= action_pred_mask.float()
         action_loss = action_loss.mean()
-        losses["action"] = action_loss * self.args.action_loss_wt
+        if self.args.learn_action_object_loss_wt: 
+            losses["action"] = action_loss * self.action_loss_wt
+        else:
+            losses["action"] = action_loss * self.args.action_loss_wt
 
         # object classes loss
         if len(gt_dict["object"]) > 0:
@@ -224,7 +235,10 @@ class Model(base.Model):
             if interact_idxs.nelement() > 0:
                 object_pred = object_pred.view(object_pred.shape[0] * object_pred.shape[1], *object_pred.shape[2:])
                 object_loss = model_util.obj_classes_loss(object_pred, object_gt, interact_idxs)
-                losses["object"] = object_loss * self.args.object_loss_wt
+                if self.args.learn_action_object_loss_wt:
+                    losses["object"] = object_loss * self.object_loss_wt
+                else:
+                    losses["object"] = object_loss * self.args.object_loss_wt
 
         # subgoal completion loss
         if self.args.subgoal_aux_loss_wt > 0:

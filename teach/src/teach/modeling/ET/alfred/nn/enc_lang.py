@@ -1,6 +1,6 @@
 import torch
 from alfred.nn.encodings import InstrLangEncoding, PosLangEncoding
-from transformers import BartTokenizer, BartForConditionalGeneration
+from transformers import BartTokenizer, BartModel
 from torch import nn
 
 
@@ -90,8 +90,7 @@ class EncoderLang(nn.Module):
         return emb_lang
 
 
-
-# ADD Bart Encoder class
+# BartModel class `Encoder-Decoder` architecture
 class EncoderLangBART(nn.Module):
     def __init__(
         self,
@@ -99,35 +98,26 @@ class EncoderLangBART(nn.Module):
         subgoal_token="<<instr>>",
         goal_token="<<goal>>",
     ):
-        """
-        BART-large encoder for language inputs
-        """
         super(EncoderLangBART, self).__init__()
+        self.args = args
         self.subgoal_token = subgoal_token
         self.goal_token = goal_token
-
-        # BART-large model
-        model_name = "facebook/bart-base"
-        tokenizer = BartTokenizer.from_pretrained(model_name)
-        model = BartForConditionalGeneration.from_pretrained(model_name)
-        self.bart_model = model
-        self.tokenizer = tokenizer
-
-        # self.enc_layernorm = nn.LayerNorm(args.demb)
-        # self.enc_dropout = nn.Dropout(args.dropout["lang"], inplace=True)
-
+        
+        # initialize language encoder (BART)
+        self.bart_model = BartModel.from_pretrained(args.lang_model_checkpoint)
+        
     def forward(self, lang_pad):
         """
-        Encode language text using BART-large model
+        encode the lang-input via the bart-model with possibility to either utilize 
+        `encoder_last_hidden_state` or `last_hidden_state` (decoder)
         """
-    
-        # Encode the input using BART
-        outputs = self.bart_model(lang_pad, return_dict=True)
-        hiddens = outputs.encoder_last_hidden_state
-
-        # Compute lengths of non-padded sequences
-        lengths = torch.tensor([lang_pad.shape[1]] * lang_pad.shape[0])
-#         lengths = (lang_pad != self.tokenizer.pad_token_id).sum(dim=1)
-
+        # encode the input using transformers.BartModel architecture (freeze)
+        outputs = self.bart_model(lang_pad)
+        if self.args.use_lang_encoder_last_hidden_state:
+            hiddens = outputs.encoder_last_hidden_state
+        else:
+            hiddens = outputs.last_hidden_state
+        # compute lengths of non-padded sequences
+        lengths = (lang_pad != self.bart_model.config.pad_token_id).sum(dim=1)
         return hiddens, lengths
 

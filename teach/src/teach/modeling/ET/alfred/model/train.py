@@ -110,7 +110,10 @@ def create_model(args, embs_ann, vocab_out):
     # put encoder on several GPUs if asked
     if torch.cuda.device_count() > 1:
         logger.info("Parallelizing the model")
-        model.model = helper_util.DataParallel(model.model)
+        # ========================= Modifications ========================= #
+        # model.model = helper_util.DataParallel(model.model)
+        model.model = helper_util.DistributedDataParallel(model.model)
+        # ================================================================= #
     return model, optimizer, prev_train_info
 
 

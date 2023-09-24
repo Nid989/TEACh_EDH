@@ -13,7 +13,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 def cfg_exp():
     # HIGH-LEVEL MODEL SETTINGS
     # where to save model and/or logs
-    name = "et_plus_bart_base"
+    name = "et_plus_bart_base_fasterrcnn"
     # model to use
     model = "transformer"
     # which device to use
@@ -23,7 +23,7 @@ def cfg_exp():
     # we can fine-tune a pre-trained model
     pretrained_path = None
     # run the code on a small chunk of data
-    fast_epoch = True
+    fast_epoch = False
 
     # Set this to 1 if running on a Mac and to large numbers like 250 if running on EC2
     lmdb_max_readers = 1
@@ -31,9 +31,11 @@ def cfg_exp():
     # DATA SETTINGS
     data = {
         # dataset name(s) for training and validation
-        "train": "lmdb_teach_edh_all",
+        # ========================= Modifications ========================= #
+        "train": "lmdb_teach_edh_fasterrcnn",
+        # ================================================================= #
         # additional dataset name(s) can be specified for validation only
-        "valid": "",
+        "valid": "lmdb_teach_edh_fasterrcnn",
         # specify the length of each dataset
         "length": 30000,
         # what to use as annotations: {'lang', 'lang_frames', 'frames'}
@@ -42,9 +44,10 @@ def cfg_exp():
         # replacement and "shuffle" results in iterating through the train dataset in random order per epoch
         "train_load_type": "shuffle",
     }
-
-    lang_pretrain_over_history_subgoals = False
-
+    # ========================= Modifications ========================= #
+    # Whether to create gt_actions as `all` or `future only`.
+    lang_pretrain_over_history_subgoals = True 
+    # ================================================================= #
 
 @eval_ingredient.config
 def cfg_eval():
@@ -106,22 +109,24 @@ def cfg_train():
     profile = False
 
     # For ablations
+    # ========================= Modifications ========================= # 
     no_lang = False
-    no_vision = False
+    no_vision = False # `True` or `False`
+    # ================================================================= # 
 
     # HYPER PARAMETERS
     # batch size
-    batch = 8 #8
+    batch = 2 # `baseline batch-size` = 8
     # number of epochs
-    epochs = 20 #20
+    epochs = 20 # `baseline epochs` = 20
     # optimizer type, must be in ('adam', 'adamw')
     optimizer = "adamw"
     # L2 regularization weight
-    weight_decay = 0.33
+    weight_decay = 0.001
     # learning rate settings
     lr = {
         # learning rate initial value
-        "init": 1e-4,
+        "init": 5e-5,
         # lr scheduler type: {'linear', 'cosine', 'triangular', 'triangular2'}
         "profile": "linear",
         # (LINEAR PROFILE) num epoch to adjust learning rate
@@ -139,6 +144,11 @@ def cfg_train():
         # initial learning rate will be divided by this value
         "warmup_scale": 1,
     }
+    # ========================= Modifications ========================= # 
+    # Only for experimental basis make `action_loss_wt` & `object_loss_wt` 
+    # learnable and determine how the model automatically emphasize either of them.
+    learn_action_object_loss_wt = False
+    # ================================================================= # 
     # weight of action loss
     action_loss_wt = 1.0
     # weight of object loss
@@ -151,19 +161,27 @@ def cfg_train():
     progress_aux_loss_wt = 0
     # maximizing entropy loss (by default it is off)
     entropy_wt = 0.0
-
+    # ======================== Modifications ========================== #
+    # whether to utilize multimodal cross-attention or not 
+    use_cross_attn = False # `True` or `False`
+    # cross-attn num_head
+    cross_attn_num_head = 8 # New addition of cross-attn num_heads
+    # ================================================================= #
+    
+    # ========================= Modifications ========================= # 
     # Should train loss be computed over history actions? (default False)
-    compute_train_loss_over_history = True
-
+    compute_train_loss_over_history = True # `True` or `False`
+    # ================================================================= # 
+    
     # TRANSFORMER settings
     # size of transformer embeddings
-    demb = 768 #1024 (LARGE)
+    demb = 768 
     # number of heads in multi-head attention
-    encoder_heads = 12 #16
+    encoder_heads = 12 
     # number of layers in transformer encoder
-    encoder_layers = 2
+    encoder_layers = 6 # originally 2
     # how many previous actions to use as input
-    num_input_actions = 1
+    num_input_actions = 5 # 5
     # which encoder to use for language encoder (by default no encoder)
     encoder_lang = {
         "shared": True,
@@ -181,7 +199,15 @@ def cfg_train():
     }
     # do not propagate gradients to the look-up table and the language encoder
     detach_lang_emb = False
-
+    # ========================= Modifications ========================= # 
+    # use bart-model to create lang-representation.
+    use_bart_model = True
+    # model-checkpoint for language-model 
+    lang_model_checkpoint = "facebook/bart-base" # `facebook/bart-base` or `Koshti10/BART-base-ET-synthetic` (Synthetic fine-tuning)
+    # whether to utilize encoder_hidden_state or last_hidden_state
+    use_lang_encoder_last_hidden_state = False # `True` (outputs.encoder_last_hidden_state) or `False` (outputs.last_hidden_state)
+    # ================================================================= # 
+    
     # DROPOUTS
     dropout = {
         # dropout rate for language (goal + instr)
@@ -210,12 +236,5 @@ def cfg_train():
         # dataset id learned encoding
         "dataset": False,
     }
-
-    # ENCODER TYPE
-    encoder_type = {
-        # Which BART Type to use, or use base transformer encoder layer
-        # BASE, BART, BART_SYNTH (Finetuned on ET synthetic data)
-        "TYPE" : "BART"
-    }
-
+    
     use_alfred_weights = False
