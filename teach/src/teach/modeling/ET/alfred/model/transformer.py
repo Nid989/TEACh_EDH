@@ -9,6 +9,7 @@ from alfred.utils import model_util
 from torch import nn
 from torch.nn import functional as F
 
+USE_BART_MODEL = True
 
 class Model(base.Model):
     def __init__(self, args, embs_ann, vocab_out, pad, seg, for_inference=False):
@@ -20,7 +21,7 @@ class Model(base.Model):
         # encoder and visual embeddings
         self.encoder_vl = EncoderVL(args)
         # pre-encoder for language tokens
-        if args.use_bart_model == True:
+        if USE_BART_MODEL == True:
             self.encoder_lang = EncoderLangBART(args)
             # freezing `BartModel` parameters/weights.
             for param in self.encoder_lang.parameters():

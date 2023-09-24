@@ -2,7 +2,8 @@ import torch
 from alfred.nn.encodings import PosEncoding, PosLearnedEncoding, TokenLearnedEncoding
 from alfred.utils import model_util
 from torch import nn
-        
+
+USE_CROSS_ATTN = True    
     
 class EncoderVL(nn.Module):
     def __init__(self, args):
@@ -30,11 +31,12 @@ class EncoderVL(nn.Module):
         self.enc_layernorm = nn.LayerNorm(args.demb)
         self.enc_dropout = nn.Dropout(args.dropout["emb"], inplace=True)
         
-        if args.use_cross_attn:
+        if USE_CROSS_ATTN:
             # cross-attention 
             self.mm_cross_attn = MultimodalCrossAttn(args)
         
     def forward(
+        args,
         self,
         emb_lang,
         emb_frames,

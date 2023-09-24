@@ -163,6 +163,7 @@ def cfg_train():
     entropy_wt = 0.0
     # ======================== Modifications ========================== #
     # whether to utilize multimodal cross-attention or not 
+    #Also set USE_CROSS_ATTN = use_cross_attn (True/False), while inference in enc_vl.py 
     use_cross_attn = False # `True` or `False`
     # cross-attn num_head
     cross_attn_num_head = 8 # New addition of cross-attn num_heads
@@ -201,6 +202,7 @@ def cfg_train():
     detach_lang_emb = False
     # ========================= Modifications ========================= # 
     # use bart-model to create lang-representation.
+    # Also change USE_BART_MODEL = True in transformer.py while inference.
     use_bart_model = True
     # model-checkpoint for language-model 
     lang_model_checkpoint = "facebook/bart-base" # `facebook/bart-base` or `Koshti10/BART-base-ET-synthetic` (Synthetic fine-tuning)
