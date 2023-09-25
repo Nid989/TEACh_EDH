@@ -11,7 +11,6 @@ from pathlib import Path
 import torch
 from alfred import constants
 from alfred.data.preprocessor import Preprocessor
-from alfred.data.preprocessor_et import PreprocessorET
 from alfred.nn.enc_visual import FeatureExtractor
 from alfred.utils import data_util, helper_util, model_util
 from progressbar import ProgressBar
@@ -41,8 +40,6 @@ def cfg_args():
     # ========================= Modification ========================= # 
     # TODO: change this to False
     fast_epoch = False # False: MAIN TRAINING 
-    # Create dataset to train original E.T. model (Set False to train E.T. + BART model)
-    original_et = False
     # ================================================================ # 
     
     # VISUAL FEATURES SETTINGS
@@ -61,6 +58,7 @@ def cfg_args():
     # generate dataset with subgoal annotations instead of human annotations
     subgoal_ann = False
     # use an existing vocabulary if specified (None for starting from scratch)
+    # vocab_path = "project/teach/src/teach/modeling/ET/files/base.vocab"
     vocab_path = None
 
     
@@ -180,7 +178,6 @@ def gather_data(output_path, num_workers):
             shutil.rmtree(output_path / dirname)
         (output_path / dirname).mkdir()
         
-
     partitions = ("train", "valid_seen", "valid_unseen")
     if not (output_path / ".deleting_worker_dirs").exists():
         for partition in partitions:
@@ -226,10 +223,7 @@ def main(args):
     if len(trajs_list) > 0:
         lock = threading.Lock()
         print("vocab_path", args.vocab_path)
-        if args.original_et:
-            preprocessor = data_util.get_preprocessor(PreprocessorET, args.subgoal_ann, lock, args.vocab_path, args.task_type)
-        else:
-            preprocessor = data_util.get_preprocessor(Preprocessor, args.subgoal_ann, lock, args.vocab_path, args.task_type)
+        preprocessor = data_util.get_preprocessor(Preprocessor, args.subgoal_ann, lock, args.vocab_path, args.task_type)
         run_in_parallel(
             process_jsons,
             args.num_workers,
