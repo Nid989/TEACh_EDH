@@ -101,3 +101,14 @@ teach_inference \
 ```
 
  To calculate metrics while at the end of inference automatically, ensure that `./outputs/outputs` path exists (Assuming you've set `OUTPUT_DIR=./outputs`). If not, the subfolder should be manually created. Predicted actions and metric files will be stored at path './outputs/' and all inference files for each EDH instance will be stored at path './outputs/outputs/'. 
+
+
+## 2) Finetuning Models for EDH Plan Prediction
+
+We have included the notebooks as well as the base data that can be used to fine tune the models. The datasets comprose of three configurations:
+
+- Dialog History Only (DH)
+- Dialog History + Dialog Act Information (DH + DA)
+- Dialog History + Dialog Act + Filter (DH + DA + F)
+
+We have also included our inference results on Finetuned llama for DH dataset.
